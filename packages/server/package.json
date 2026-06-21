@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "build:bundle": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/polyrader-server.js --external:better-sqlite3 --external:bufferutil --external:utf-8-validate --banner:js='import{createRequire}from\"module\";const require=createRequire(import.meta.url);' && bun build --compile src/index.ts --outfile dist/polyrader-server",
+    "build:bundle": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/polyrader-server.js --external:better-sqlite3 --external:bufferutil --external:utf-8-validate --banner:js='import{createRequire}from\"module\";const require=createRequire(import.meta.url);' && bun build --compile src/index.ts --outfile=dist/polyrader-server",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
