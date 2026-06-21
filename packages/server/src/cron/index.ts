@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import { MarketService } from '../services/market-service';
 import { DailyService } from '../services/daily-service';
 import { AiConfigService } from '../services/ai-config-service';
+import { SignalService } from '../services/signal-service';
 import { HLTVCrawler, PolymarketWsClient, PolymarketGammaClient, MarketRepository } from '@polyrader/infra';
 import { LLMRepository } from '@polyrader/infra';
 import { runMigrations } from '@polyrader/infra';
@@ -14,6 +15,7 @@ import { logger } from '../utils/logger';
 const marketService = new MarketService();
 const dailyService = new DailyService();
 const aiConfigService = new AiConfigService();
+const signalService = new SignalService();
 const hltvCrawler = new HLTVCrawler();
 const llmRepo = new LLMRepository();
 const marketRepo = new MarketRepository();
@@ -101,6 +103,19 @@ export function startCronJobs(): void {
       }
     } catch (err) {
       logger.error('Cron: Whale ingestion failed', { error: (err as Error).message });
+    }
+  });
+
+  // ============================================================
+  // Arbitrage scanner: Scan every 2 minutes
+  // Detects Yes/No price sum < 1 and cross-market spreads,
+  // broadcasts opportunities via WebSocket 'arbitrage' channel.
+  // ============================================================
+  cron.schedule('*/2 * * * *', async () => {
+    try {
+      await signalService.scanAndBroadcastArbitrage();
+    } catch (err) {
+      logger.error('Cron: Arbitrage scan failed', { error: (err as Error).message });
     }
   });
 

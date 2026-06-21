@@ -6,6 +6,7 @@ import { StatsSkeleton, TableSkeleton } from '../components/Skeletons';
 import { AlertManager } from '../components/alert-manager';
 import { Card, CardHeader, CardTitle, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Button } from '@/components/ui';
 import { useI18n } from '../hooks/use-i18n';
+import { useWebSocket } from '../hooks/use-websocket';
 import type { SignalComparison } from '@polyrader/core';
 
 interface SignalStats {
@@ -24,6 +25,7 @@ interface ArbitrageOpportunity {
 
 export function SignalsPage() {
   const { t } = useI18n();
+  const { subscribe } = useWebSocket();
   const [signals, setSignals] = useState<SignalComparison[]>([]);
   const [stats, setStats] = useState<SignalStats>({ accuracy: 0, brierScore: 0, totalPredictions: 0 });
   const [arbitrageOps, setArbitrageOps] = useState<ArbitrageOpportunity[]>([]);
@@ -51,6 +53,17 @@ export function SignalsPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Subscribe to real-time arbitrage updates via WebSocket
+  useEffect(() => {
+    const unsub = subscribe('arbitrage', (data) => {
+      const payload = data as { type: string; opportunities: ArbitrageOpportunity[] };
+      if (payload?.type === 'arbitrage:update' && Array.isArray(payload.opportunities)) {
+        setArbitrageOps(payload.opportunities);
+      }
+    });
+    return unsub;
+  }, [subscribe]);
 
   return (
     <div className="space-y-6">

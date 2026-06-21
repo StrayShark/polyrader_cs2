@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Market } from '@polyrader/core';
 import { useI18n } from '../hooks/use-i18n';
@@ -38,6 +38,8 @@ export function MarketHeatmap({ markets }: { markets: Market[] }) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [hoveredAlign, setHoveredAlign] = useState<'left' | 'right' | 'center'>('center');
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const cells = useMemo<HeatmapCell[]>(() => {
     if (markets.length === 0) return [];
@@ -81,7 +83,7 @@ export function MarketHeatmap({ markets }: { markets: Market[] }) {
         <h2 className="text-sm font-medium">{t('heatmap.title')}</h2>
         <p className="text-xs text-muted-foreground">{t('heatmap.subtitle')}</p>
       </CardHeader>
-      <div className="space-y-4 p-4 pt-0">
+      <div ref={containerRef} className="space-y-4 p-4 pt-0">
         {tierOrder.map((tier) => {
           const tierCells = grouped[tier];
           if (tierCells.length === 0) return null;
@@ -108,12 +110,31 @@ export function MarketHeatmap({ markets }: { markets: Market[] }) {
                     style={{
                       backgroundColor: `rgba(34, 197, 94, ${0.15 + cell.intensity * 0.85})`,
                     }}
-                    onMouseEnter={() => setHoveredId(cell.marketId)}
+                    onMouseEnter={(e) => {
+                      setHoveredId(cell.marketId);
+                      const container = containerRef.current;
+                      if (container) {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const containerRect = container.getBoundingClientRect();
+                        const cellCenter = rect.left + rect.width / 2 - containerRect.left;
+                        const third = containerRect.width / 3;
+                        if (cellCenter < third) setHoveredAlign('left');
+                        else if (cellCenter > third * 2) setHoveredAlign('right');
+                        else setHoveredAlign('center');
+                      }
+                    }}
                     onMouseLeave={() => setHoveredId(null)}
                     onClick={() => navigate(`/match/${cell.marketId}`)}
                   >
                     {hoveredId === cell.marketId && (
-                      <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md border border-border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md">
+                      <div
+                        className={cn(
+                          'pointer-events-none absolute bottom-full z-50 mb-2 whitespace-nowrap rounded-md border border-border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md',
+                          hoveredAlign === 'left' && 'left-0',
+                          hoveredAlign === 'right' && 'right-0',
+                          hoveredAlign === 'center' && 'left-1/2 -translate-x-1/2',
+                        )}
+                      >
                         <div className="max-w-[220px] truncate font-medium">{cell.question}</div>
                         <div className="mt-1 text-muted-foreground">
                           {t('heatmap.price')}: {cell.price}

@@ -59,7 +59,15 @@ test.describe('Daily page interactions', () => {
 test.describe('Whales page interactions', () => {
   test('renders whale list from API', async ({ page }) => {
     await blockWs(page);
-    await page.route('**/api/whales**', (route) =>
+    // Mock graph endpoint separately to avoid returning whale list data
+    await page.route('**/api/whales/graph', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: { nodes: [], links: [] } }),
+      }),
+    );
+    await page.route('**/api/whales?**', (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',

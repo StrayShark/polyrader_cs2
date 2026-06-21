@@ -4,6 +4,8 @@ import type { OrderBookSummary } from '@polyrader/infra';
 import { MarketRepository } from '@polyrader/infra';
 import { cacheGet, cacheSet } from '@polyrader/infra';
 import { RequestDedup } from './request-dedup';
+import { AlertService } from './alert-service';
+import { broadcast } from '../websocket';
 import { logger } from '../utils/logger';
 
 const CACHE_TTL = 60; // 1 minute
@@ -14,6 +16,33 @@ export class MarketService {
   private clobClient = new PolymarketClobClient();
   private marketRepo = new MarketRepository();
   private dedup = new RequestDedup<unknown>();
+  private alertService = new AlertService();
+
+  /**
+   * Build a marketSlug → {price, volume} map from fetched markets,
+   * run alert threshold checks, and broadcast any triggered alerts via WebSocket.
+   */
+  private checkPriceAlerts(markets: Market[]): void {
+    try {
+      const marketPrices = new Map<string, { price: number; volume: number }>();
+      for (const market of markets) {
+        const price = parseFloat(market.outcomePrices?.[0] ?? '0');
+        if (!Number.isFinite(price)) continue;
+        marketPrices.set(market.slug, {
+          price,
+          volume: market.volume24h ?? market.volume ?? 0,
+        });
+      }
+      if (marketPrices.size === 0) return;
+      const triggered = this.alertService.checkAlerts(marketPrices);
+      if (triggered.length > 0) {
+        broadcast('alerts', { type: 'alert:triggered', alerts: triggered });
+        logger.info('Alerts triggered', { count: triggered.length });
+      }
+    } catch (err) {
+      logger.warn('Alert check failed', { error: (err as Error).message });
+    }
+  }
 
   async getMarkets(limit = 50, offset = 0): Promise<Market[]> {
     const cacheKey = `markets:${limit}:${offset}`;
@@ -31,6 +60,7 @@ export class MarketService {
             logger.warn('Failed to upsert market to DB', { conditionId: market.conditionId, error: (err as Error).message });
           }
         }
+        this.checkPriceAlerts(markets);
         return markets;
       } catch (err) {
         logger.warn('Polymarket API failed, falling back to DB', { cacheKey, error: (err as Error).message });
@@ -86,6 +116,7 @@ export class MarketService {
           }
         }
         await cacheSet('markets:50:0', markets.slice(0, 50), CACHE_TTL);
+        this.checkPriceAlerts(markets);
         return markets;
       } catch (err) {
         logger.error('Failed to refresh markets from Polymarket', { error: (err as Error).message });

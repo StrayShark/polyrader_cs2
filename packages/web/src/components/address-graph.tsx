@@ -76,7 +76,7 @@ function initSim(graph: AddressGraph, width: number, height: number): SimState {
     };
   });
 
-  return { nodes, nodeMap: new Map(nodes.map((n) => [n.id, n])), alpha: 1 };
+  return { nodes, nodeMap: new Map(nodes.map((n) => [n.id, n])), alpha: 0.3 };
 }
 
 function stepSimulation(
@@ -86,6 +86,7 @@ function stepSimulation(
   alpha: number,
   width: number,
   height: number,
+  computeRepulsion: boolean,
 ): void {
   const cx = width / 2;
   const cy = height / 2;
@@ -95,27 +96,29 @@ function stepSimulation(
   const kCenter = 0.02;
   const damping = 0.6;
 
-  // Repulsion between every pair of nodes
-  for (let i = 0; i < nodes.length; i++) {
-    const a = nodes[i];
-    for (let j = i + 1; j < nodes.length; j++) {
-      const b = nodes[j];
-      let dx = a.x - b.x;
-      let dy = a.y - b.y;
-      let d2 = dx * dx + dy * dy;
-      if (d2 < 0.01) {
-        dx = (Math.random() - 0.5) * 2;
-        dy = (Math.random() - 0.5) * 2;
-        d2 = 0.01;
+  // Repulsion between every pair of nodes (skipped on alternate frames for large graphs)
+  if (computeRepulsion) {
+    for (let i = 0; i < nodes.length; i++) {
+      const a = nodes[i];
+      for (let j = i + 1; j < nodes.length; j++) {
+        const b = nodes[j];
+        let dx = a.x - b.x;
+        let dy = a.y - b.y;
+        let d2 = dx * dx + dy * dy;
+        if (d2 < 0.01) {
+          dx = (Math.random() - 0.5) * 2;
+          dy = (Math.random() - 0.5) * 2;
+          d2 = 0.01;
+        }
+        const d = Math.sqrt(d2);
+        const f = (kRepel / d2) * alpha;
+        const fx = (dx / d) * f;
+        const fy = (dy / d) * f;
+        a.vx += fx;
+        a.vy += fy;
+        b.vx -= fx;
+        b.vy -= fy;
       }
-      const d = Math.sqrt(d2);
-      const f = (kRepel / d2) * alpha;
-      const fx = (dx / d) * f;
-      const fy = (dy / d) * f;
-      a.vx += fx;
-      a.vy += fy;
-      b.vx -= fx;
-      b.vy -= fy;
     }
   }
 
@@ -186,15 +189,32 @@ export function AddressGraph({ graph }: AddressGraphProps) {
     simRef.current = initSim(graph, width, SIM_HEIGHT);
     render();
 
-    const tick = () => {
+    const FRAME_INTERVAL = 1000 / 30; // 30fps frame rate limit
+    const REPULSION_SKIP_THRESHOLD = 30; // skip repulsion on alternate frames above this node count
+    let lastFrameTime = 0;
+    let frameCount = 0;
+
+    const tick = (now: number) => {
+      // Frame rate limiting: throttle to 30fps
+      if (now - lastFrameTime < FRAME_INTERVAL) {
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      lastFrameTime = now;
+
       const sim = simRef.current;
-      sim.alpha *= 0.985;
-      if (sim.alpha < 0.02) {
+      sim.alpha *= 0.95; // 5% decay per frame — faster convergence
+      if (sim.alpha < 0.01) {
         rafRef.current = 0;
         render();
         return;
       }
-      stepSimulation(sim.nodes, sim.nodeMap, graph.links, sim.alpha, width, SIM_HEIGHT);
+
+      // When the graph is large, compute repulsion every other frame to reduce O(n²) cost
+      const computeRepulsion = sim.nodes.length <= REPULSION_SKIP_THRESHOLD || frameCount % 2 === 0;
+      frameCount++;
+
+      stepSimulation(sim.nodes, sim.nodeMap, graph.links, sim.alpha, width, SIM_HEIGHT, computeRepulsion);
       render();
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -204,6 +224,7 @@ export function AddressGraph({ graph }: AddressGraphProps) {
       const sim = simRef.current;
       sim.alpha = Math.max(sim.alpha, 0.3);
       if (rafRef.current === 0) {
+        lastFrameTime = 0; // reset so the first reheated frame is processed immediately
         rafRef.current = requestAnimationFrame(tick);
       }
     };

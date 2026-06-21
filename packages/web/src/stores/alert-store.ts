@@ -33,6 +33,7 @@ interface AlertState {
     triggered?: boolean;
   }) => Promise<void>;
   deleteAlert: (id: string) => Promise<void>;
+  markAlertTriggered: (triggeredAlerts: PriceAlert[]) => void;
 }
 
 export const useAlertStore = create<AlertState>((set, get) => ({
@@ -80,4 +81,33 @@ export const useAlertStore = create<AlertState>((set, get) => ({
       set({ error: (err as Error).message });
     }
   },
+
+  markAlertTriggered: (triggeredAlerts) => {
+    const triggeredIds = new Set(triggeredAlerts.map((a) => a.id));
+    set({
+      alerts: get().alerts.map((a) =>
+        triggeredIds.has(a.id)
+          ? { ...a, triggered: true, triggeredAt: a.triggeredAt ?? new Date().toISOString() }
+          : a,
+      ),
+    });
+  },
 }));
+
+/**
+ * Subscribe to the 'alerts' WebSocket channel and update the alert store
+ * when alert:triggered events are received.
+ *
+ * @param subscribe - The subscribe function from useWebSocket()
+ * @returns An unsubscribe function
+ */
+export function initAlertWebSocket(
+  subscribe: (channel: string, handler: (data: unknown) => void) => () => void,
+): () => void {
+  return subscribe('alerts', (data: unknown) => {
+    const event = data as { type?: string; alerts?: PriceAlert[] };
+    if (event?.type === 'alert:triggered' && Array.isArray(event.alerts)) {
+      useAlertStore.getState().markAlertTriggered(event.alerts);
+    }
+  });
+}

@@ -3,6 +3,7 @@ import { SignalComparisonEngine, PredictionEngine } from '@polyrader/core';
 import { cacheGet, cacheSet, LLMRepository } from '@polyrader/infra';
 import { MarketService } from './market-service';
 import { buildMatchInfo, buildFallbackMatchInfo, loadTeamFromDb, buildFallbackTeam } from './match-helpers';
+import { broadcast } from '../websocket';
 import { logger } from '../utils/logger';
 
 export interface ArbitrageOpportunity {
@@ -193,6 +194,26 @@ export class SignalService {
     } catch (err) {
       logger.warn('Failed to detect arbitrage opportunities', { error: (err as Error).message });
       return { opportunities: [] };
+    }
+  }
+
+  /**
+   * Scan for arbitrage opportunities and broadcast via WebSocket.
+   * Called by cron job every 2 minutes.
+   */
+  async scanAndBroadcastArbitrage(): Promise<void> {
+    try {
+      const result = await this.getArbitrageOpportunities();
+      if (result.opportunities.length > 0) {
+        broadcast('arbitrage', {
+          type: 'arbitrage:update',
+          opportunities: result.opportunities,
+          count: result.opportunities.length,
+          timestamp: Date.now(),
+        });
+      }
+    } catch (err) {
+      logger.warn('Failed to broadcast arbitrage', { error: (err as Error).message });
     }
   }
 

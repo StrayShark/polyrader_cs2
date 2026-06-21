@@ -19,14 +19,16 @@ import {
   DialogFooter,
   Input,
 } from '@/components/ui';
-import { useAlertStore, type AlertType } from '../stores/alert-store';
+import { useAlertStore, type AlertType, initAlertWebSocket } from '../stores/alert-store';
 import { useMarketStore } from '../stores/market-store';
 import { useI18n } from '../hooks/use-i18n';
+import { useWebSocket } from '../hooks/use-websocket';
 
 export function AlertManager() {
   const { t } = useI18n();
   const { alerts, isLoading, error, fetchAlerts, createAlert, deleteAlert } = useAlertStore();
   const { markets, fetchMarkets } = useMarketStore();
+  const { subscribe } = useWebSocket();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedSlug, setSelectedSlug] = useState('');
   const [selectedQuestion, setSelectedQuestion] = useState('');
@@ -38,6 +40,10 @@ export function AlertManager() {
     fetchAlerts();
     fetchMarkets(100);
   }, [fetchAlerts, fetchMarkets]);
+
+  useEffect(() => {
+    return initAlertWebSocket(subscribe);
+  }, [subscribe]);
 
   const handleCreate = async () => {
     const thresholdNum = parseFloat(threshold);

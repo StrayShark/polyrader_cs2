@@ -14,8 +14,20 @@ vi.mock('@polyrader/infra', () => ({
     findByConditionId: vi.fn(),
     upsert: vi.fn(),
   })),
+  AlertRepository: vi.fn().mockImplementation(() => ({
+    getAlerts: vi.fn().mockReturnValue([]),
+    getAlertById: vi.fn().mockReturnValue(null),
+    createAlert: vi.fn(),
+    updateAlert: vi.fn(),
+    deleteAlert: vi.fn(),
+    getTriggeredAlerts: vi.fn().mockReturnValue([]),
+  })),
   cacheGet: vi.fn(),
   cacheSet: vi.fn(),
+}));
+
+vi.mock('../websocket', () => ({
+  broadcast: vi.fn(),
 }));
 
 import { MarketService } from '../services/market-service';

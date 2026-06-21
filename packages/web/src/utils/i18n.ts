@@ -51,6 +51,23 @@ const zh: Record<string, string> = {
   'dashboard.liquidity': '流动性',
   'dashboard.price': '价格',
 
+  // Connection status
+  'connectionStatus.connected': '已连接',
+  'connectionStatus.connecting': '连接中',
+  'connectionStatus.disconnected': '已断开·重连中',
+
+  // Market heatmap
+  'heatmap.title': '市场热力图',
+  'heatmap.subtitle': '按赛事级别和交易量的市场活跃度',
+  'heatmap.price': '价格',
+  'heatmap.volume24h': '24h 交易量',
+  'heatmap.markets': '个市场',
+  'heatmap.tier.S': 'S 级',
+  'heatmap.tier.A': 'A 级',
+  'heatmap.tier.B': 'B 级',
+  'heatmap.tier.Tier': '常规',
+  'heatmap.empty': '暂无市场数据',
+
   // Whales page
   'whales.title': '巨鲸追踪',
   'whales.subtitle': '大额地址行为监控与可疑度分析',
