@@ -1,0 +1,25 @@
+node_modules/
+dist/
+.turbo/
+.env
+.env.local
+*.log
+.DS_Store
+coverage/
+.vite/
+data/
+.vscode/
+.idea/
+*.swp
+*.swo
+*.db
+*.db-journal
+*.db-wal
+
+# Tauri
+src-tauri/target/
+src-tauri/gen/
+
+# Playwright
+test-results/
+playwright-report/

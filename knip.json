@@ -1,0 +1,33 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignore": [
+    "src-tauri",
+    "packages/web/src/index.ts",
+    "scripts/screenshot.mjs",
+    "packages/web/src/components/ui/**"
+  ],
+  "ignoreDependencies": ["@types/express-rate-limit"],
+  "ignoreBinaries": ["cargo", "cargo-tauri"],
+  "workspaces": {
+    "packages/core": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"],
+      "ignore": ["src/**/*.test.ts"]
+    },
+    "packages/server": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"],
+      "ignore": ["src/**/*.test.ts"]
+    },
+    "packages/infra": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"],
+      "ignore": ["src/**/*.test.ts"]
+    },
+    "packages/web": {
+      "entry": ["src/main.tsx", "src/App.tsx"],
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignore": ["src/**/*.test.tsx", "src/__tests__/setup.ts"]
+    }
+  }
+}

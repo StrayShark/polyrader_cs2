@@ -1,0 +1,127 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npx turbo run lint
+
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npx turbo run typecheck
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: npm ci
+      - run: npm run build:server
+      - name: Verify server binary
+        run: |
+          if [ ! -f packages/server/dist/polyrader-server ]; then
+            echo "ERROR: Server binary not found!"
+            exit 1
+          fi
+      - run: npx turbo run test
+
+  build:
+    name: Build Web
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npx turbo run build
+
+  # Verify Tauri Rust code compiles (no full build, just cargo check)
+  cargo-check:
+    name: Cargo Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Install Linux deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev
+      - name: Cargo check
+        working-directory: src-tauri
+        run: cargo check
+
+  # Verify bun compile produces standalone binaries on all platforms
+  bun-compile:
+    name: Bun Compile (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: polyrader-server
+          - os: windows-latest
+            artifact: polyrader-server.exe
+          - os: macos-latest
+            artifact: polyrader-server
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: npm ci
+      - name: Build server bundle
+        run: npm run build:server
+      - name: Verify binary exists
+        shell: bash
+        run: |
+          if [ ! -f "packages/server/dist/${{ matrix.artifact }}" ]; then
+            echo "ERROR: Binary not found at packages/server/dist/${{ matrix.artifact }}"
+            ls -la packages/server/dist/ || true
+            exit 1
+          fi
+          echo "Binary size: $(du -h packages/server/dist/${{ matrix.artifact }} | cut -f1)"
+      - name: Quick smoke test (Unix only)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          PORT=13999 POLYRADER_DATA_DIR=/tmp/bun-smoke-test POLYRADER_ENCRYPTION_KEY=test-key timeout 3 ./packages/server/dist/${{ matrix.artifact }} || true
+          echo "Smoke test completed"

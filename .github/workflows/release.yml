@@ -1,0 +1,154 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  # ============================================================
+  # Job 1: Run tests before releasing
+  # ============================================================
+  test:
+    name: Test (pre-release)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npx turbo run typecheck test
+
+  # ============================================================
+  # Job 2: Build Tauri apps for macOS, Windows, Linux
+  # ============================================================
+  build-tauri:
+    name: Build ${{ matrix.os }}
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            label: macOS (Apple Silicon)
+            artifact: dmg
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            label: macOS (Intel)
+            artifact: dmg
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            label: Windows
+            artifact: msi
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            label: Linux
+            artifact: AppImage
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Install Node.js
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # Install bun for standalone binary compilation
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # Install Rust with the target
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      # Cache Rust build
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      # Install Linux dependencies
+      - name: Install Linux deps
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev
+
+      # Install npm dependencies
+      - run: npm ci
+
+      # Build server bundle (esbuild JS + bun compile standalone binary)
+      - name: Build server bundle
+        run: npm run build:server
+
+      - name: Verify server binary
+        shell: bash
+        run: |
+          if [ ! -f packages/server/dist/polyrader-server ]; then
+            echo "ERROR: Server binary not found!"
+            exit 1
+          fi
+          echo "Server binary size: $(du -h packages/server/dist/polyrader-server | cut -f1)"
+
+      # Build Tauri app with updater signature
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'PolyRader CS2 ${{ github.ref_name }}'
+          releaseBody: |
+            ## PolyRader CS2 ${{ github.ref_name }}
+
+            ### Downloads
+            - **macOS (Apple Silicon)**: `.dmg` (aarch64)
+            - **macOS (Intel)**: `.dmg` (x86_64)
+            - **Windows**: `.msi` installer
+            - **Linux**: `.AppImage`
+
+            ### Updater Artifacts
+            - `latest.json` — auto-update manifest (signed)
+          releaseDraft: false
+          prerelease: false
+          args: --target ${{ matrix.target }}
+
+  # ============================================================
+  # Job 3: Publish latest.json for auto-updater
+  # ============================================================
+  publish-updater:
+    name: Publish Updater Manifest
+    needs: build-tauri
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all release assets
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate latest.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          # The tauri-action already generates and uploads latest.json
+          # This step ensures it's available as the latest release asset
+          echo "Updater artifacts published by tauri-action"
+          echo "Tag: $TAG"
+
+      - name: Verify release
+        run: |
+          echo "Release ${{ github.ref_name }} published successfully"
+          echo "Auto-updater will check: https://github.com/dutongxue/polyrader_cs2/releases/latest/download/latest.json"

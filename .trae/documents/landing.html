@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PolyRader CS2 — 首次配置</title>
+<style>
+/* ============================================================
+   shadcn/ui DESIGN TOKENS — Dark / Light / Matrix
+   (Identical to ui-design.html — 3 theme system)
+   ============================================================ */
+:root, [data-theme="dark"] {
+  --background: #0A0A0A;
+  --foreground: #FAFAFA;
+  --card: #171717;
+  --card-foreground: #FAFAFA;
+  --popover: #171717;
+  --popover-foreground: #FAFAFA;
+  --primary: #FAFAFA;
+  --primary-foreground: #171717;
+  --secondary: #262626;
+  --secondary-foreground: #FAFAFA;
+  --muted: #262626;
+  --muted-foreground: #A1A1AA;
+  --accent: #262626;
+  --accent-foreground: #FAFAFA;
+  --destructive: #7F1D1D;
+  --destructive-foreground: #FCA5A5;
+  --border: #27272A;
+  --input: #27272A;
+  --ring: #FAFAFA;
+  --chart-1: #3B82F6;
+  --chart-2: #22C55E;
+  --chart-3: #EAB308;
+  --chart-4: #A855F7;
+  --chart-5: #F97316;
+  --radius: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-sm: 0.375rem;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+  --shadow: 0 1px 3px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-lg: 0 4px 6px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.4);
+  --green: #22C55E;
+  --red: #EF4444;
+  --yellow: #EAB308;
+  --orange: #F97316;
+  --purple: #A855F7;
+  --cyan: #06B6D4;
+  --blue: #3B82F6;
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "SF Mono", Menlo, Monaco, "Courier New", monospace;
+  --sidebar-bg: #0F0F0F;
+  --statusbar-bg: #1A1A1A;
+  --hero-gradient-1: rgba(59,130,246,0.06);
+  --hero-gradient-2: rgba(168,85,247,0.04);
+  --hero-icon-bg: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(168,85,247,0.15));
+  --hero-icon-border: rgba(59,130,246,0.2);
+}
+[data-theme="light"] {
+  --background: #FFFFFF;
+  --foreground: #0A0A0A;
+  --card: #FFFFFF;
+  --card-foreground: #0A0A0A;
+  --popover: #FFFFFF;
+  --popover-foreground: #0A0A0A;
+  --primary: #171717;
+  --primary-foreground: #FAFAFA;
+  --secondary: #F5F5F5;
+  --secondary-foreground: #171717;
+  --muted: #F5F5F5;
+  --muted-foreground: #737373;
+  --accent: #F5F5F5;
+  --accent-foreground: #171717;
+  --destructive: #FEE2E2;
+  --destructive-foreground: #DC2626;
+  --border: #E5E5E5;
+  --input: #E5E5E5;
+  --ring: #0A0A0A;
+  --chart-1: #2563EB;
+  --chart-2: #16A34A;
+  --chart-3: #CA8A04;
+  --chart-4: #9333EA;
+  --chart-5: #EA580C;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-lg: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+  --green: #16A34A;
+  --red: #DC2626;
+  --yellow: #CA8A04;
+  --orange: #EA580C;
+  --purple: #9333EA;
+  --cyan: #0891B2;
+  --blue: #2563EB;
+  --sidebar-bg: #FAFAFA;
+  --statusbar-bg: #F5F5F5;
+  --hero-gradient-1: rgba(37,99,235,0.04);
+  --hero-gradient-2: rgba(147,51,234,0.03);
+  --hero-icon-bg: linear-gradient(135deg, rgba(37,99,235,0.1), rgba(147,51,234,0.1));
+  --hero-icon-border: rgba(37,99,235,0.15);
+}
+[data-theme="matrix"] {
+  --background: #0D0D0D;
+  --foreground: #00FF41;
+  --card: #111111;
+  --card-foreground: #00FF41;
+  --popover: #111111;
+  --popover-foreground: #00FF41;
+  --primary: #00FF41;
+  --primary-foreground: #0D0D0D;
+  --secondary: #1A1A1A;
+  --secondary-foreground: #00FF41;
+  --muted: #1A1A1A;
+  --muted-foreground: #2A5A2A;
+  --accent: #1A1A1A;
+  --accent-foreground: #00FF41;
+  --destructive: #330000;
+  --destructive-foreground: #FF3333;
+  --border: #1A2A1A;
+  --input: #1A2A1A;
+  --ring: #00FF41;
+  --chart-1: #00FF41;
+  --chart-2: #00FF41;
+  --chart-3: #FFCC00;
+  --chart-4: #CC44CC;
+  --chart-5: #FF8800;
+  --shadow-sm: 0 1px 2px rgba(0,255,65,0.08);
+  --shadow: 0 1px 3px rgba(0,255,65,0.12), 0 1px 2px rgba(0,255,65,0.08);
+  --shadow-lg: 0 4px 6px rgba(0,255,65,0.15), 0 2px 4px rgba(0,255,65,0.1);
+  --green: #00FF41;
+  --red: #FF3333;
+  --yellow: #FFCC00;
+  --orange: #FF8800;
+  --purple: #CC44CC;
+  --cyan: #00CCCC;
+  --blue: #4488FF;
+  --sidebar-bg: #0A0A0A;
+  --statusbar-bg: #111111;
+  --hero-gradient-1: rgba(0,255,65,0.05);
+  --hero-gradient-2: rgba(204,68,204,0.03);
+  --hero-icon-bg: linear-gradient(135deg, rgba(0,255,65,0.12), rgba(204,68,204,0.08));
+  --hero-icon-border: rgba(0,255,65,0.2);
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font-ui);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 3px; }
+
+.mono { font-family: var(--font-mono); }
+
+/* ============================================================
+   LANDING LAYOUT
+   ============================================================ */
+.landing {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, var(--hero-gradient-1), transparent),
+    radial-gradient(ellipse 60% 50% at 80% 80%, var(--hero-gradient-2), transparent),
+    var(--background);
+}
+
+.container {
+  width: 100%;
+  max-width: 780px;
+}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero {
+  text-align: center;
+  margin-bottom: 44px;
+}
+
+.hero-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: var(--hero-icon-bg);
+  border: 1px solid var(--hero-icon-border);
+  margin-bottom: 18px;
+}
+
+.hero-icon svg {
+  width: 28px;
+  height: 28px;
+  color: var(--blue);
+}
+
+.hero h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  margin-bottom: 6px;
+}
+
+.hero p {
+  font-size: 14px;
+  color: var(--muted-foreground);
+  max-width: 480px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+/* ============================================================
+   STEP INDICATOR
+   ============================================================ */
+.steps-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  border: 2px solid var(--border);
+  color: var(--muted-foreground);
+  background: var(--card);
+  transition: all 0.3s;
+  flex-shrink: 0;
+}
+
+.step-dot.active {
+  border-color: var(--blue);
+  background: rgba(59,130,246,0.12);
+  color: var(--blue);
+}
+
+.step-dot.done {
+  border-color: var(--green);
+  background: rgba(34,197,94,0.12);
+  color: var(--green);
+}
+
+.step-line {
+  width: 64px;
+  height: 2px;
+  background: var(--border);
+  margin: 0 6px;
+  transition: background 0.3s;
+}
+
+.step-line.done { background: var(--green); }
+
+.step-labels {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 36px;
+}
+
+.step-label {
+  width: 108px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+.step-label.active { color: var(--blue); }
+.step-label.done { color: var(--green); }
+
+/* ============================================================
+   CARD — matches ui-design.html .panel
+   ============================================================ */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+  border-bottom: 1px solid var(--border);
+}
+
+.card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-header-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.card-header-icon.blue  { background: rgba(59,130,246,0.12); color: var(--blue); }
+.card-header-icon.green { background: rgba(34,197,94,0.12); color: var(--green); }
+.card-header-icon.purple { background: rgba(168,85,247,0.12); color: var(--purple); }
+.card-header-icon.orange { background: rgba(249,115,22,0.12); color: var(--orange); }
+
+.card-header-icon svg { width: 16px; height: 16px; }
+
+.card-header-desc {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  font-weight: 400;
+}
+
+.card-body { padding: 24px; }
+
+/* ============================================================
+   FORM — matches ui-design.html input style
+   ============================================================ */
+.form-group { margin-bottom: 18px; }
+.form-group:last-child { margin-bottom: 0; }
+
+.form-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.form-label-hint {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  font-weight: 400;
+  font-family: var(--font-mono);
+}
+
+.form-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px;
+  background: var(--background);
+  border: 1px solid var(--input);
+  border-radius: var(--radius);
+  color: var(--foreground);
+  font-size: 14px;
+  font-family: var(--font-mono);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 2px rgba(250,250,250,0.1);
+}
+
+.form-input::placeholder { color: var(--muted-foreground); font-family: var(--font-ui); }
+.form-input.error { border-color: var(--red); }
+
+.form-error {
+  font-size: 12px;
+  color: var(--red);
+  margin-top: 6px;
+  display: none;
+  align-items: center;
+  gap: 4px;
+}
+
+.form-error.show { display: flex; }
+
+.form-input-row {
+  display: flex;
+  gap: 10px;
+}
+
+.form-input-row .form-input { flex: 1; }
+
+/* ============================================================
+   BUTTONS — matches ui-design.html .btn
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  border: none;
+  color: var(--primary-foreground);
+  background: var(--primary);
+  border-radius: var(--radius);
+  font-weight: 500;
+  height: 40px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s;
+}
+
+.btn:hover { opacity: 0.9; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-secondary {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover { background: var(--accent); }
+
+.btn-outline {
+  background: transparent;
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.btn-outline:hover { background: var(--accent); }
+
+.btn-sm { padding: 4px 12px; font-size: 12px; height: 32px; }
+.btn svg { flex-shrink: 0; }
+
+/* ============================================================
+   BADGE — matches ui-design.html .badge
+   ============================================================ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 9999px;
+  font-family: var(--font-mono);
+}
+
+.badge-green  { background: rgba(34,197,94,0.12);  color: var(--green); }
+.badge-yellow { background: rgba(234,179,8,0.12);  color: var(--yellow); }
+.badge-blue   { background: rgba(59,130,246,0.12); color: var(--blue); }
+.badge-purple { background: rgba(168,85,247,0.12); color: var(--purple); }
+
+/* ============================================================
+   PROVIDER LIST
+   ============================================================ */
+.provider-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.provider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.provider-row:hover { border-color: var(--muted-foreground); }
+.provider-row.selected { border-color: var(--blue); background: rgba(59,130,246,0.04); }
+.provider-row.configured { border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.03); }
+
+.provider-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.pi-openai    { background: rgba(16,163,127,0.15); color: #10A37F; }
+.pi-anthropic { background: rgba(212,119,87,0.15); color: #D47757; }
+.pi-google    { background: rgba(66,133,244,0.15); color: #4285F4; }
+.pi-deepseek  { background: rgba(77,107,254,0.15); color: #4D6BFE; }
+.pi-xai       { background: rgba(249,115,22,0.15); color: var(--orange); }
+.pi-groq      { background: rgba(245,80,48,0.15); color: #F55030; }
+
+.provider-info { flex: 1; min-width: 0; }
+.provider-name { font-size: 14px; font-weight: 600; }
+.provider-model { font-size: 12px; color: var(--muted-foreground); font-family: var(--font-mono); margin-top: 1px; }
+
+.provider-status {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted-foreground);
+  flex-shrink: 0;
+}
+
+.status-dot.on { background: var(--green); }
+
+/* Toggle switch */
+.toggle {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--muted);
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.toggle.on { background: var(--green); }
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.2s;
+}
+
+.toggle.on::after { transform: translateX(16px); }
+
+/* Provider edit panel */
+.provider-edit {
+  display: none;
+  margin-top: 16px;
+  padding: 18px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.provider-edit.show { display: block; }
+
+.provider-edit-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.test-result {
+  font-size: 12px;
+  margin-top: 8px;
+  font-family: var(--font-mono);
+}
+
+/* ============================================================
+   DATA SOURCE CARD — matches ui-design.html signal-row style
+   ============================================================ */
+.source-list { display: flex; flex-direction: column; gap: 8px; }
+
+.source-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.source-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.source-icon.blue   { background: rgba(59,130,246,0.12); color: var(--blue); }
+.source-icon.green  { background: rgba(34,197,94,0.12);  color: var(--green); }
+.source-icon.purple { background: rgba(168,85,247,0.12); color: var(--purple); }
+.source-icon.orange { background: rgba(249,115,22,0.12); color: var(--orange); }
+
+.source-icon svg { width: 18px; height: 18px; }
+
+.source-info { flex: 1; min-width: 0; }
+.source-info h4 { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.source-info p  { font-size: 12px; color: var(--muted-foreground); line-height: 1.5; }
+
+/* ============================================================
+   FOLDER PICKER — Step 3
+   ============================================================ */
+.folder-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.folder-path {
+  flex: 1;
+  height: 40px;
+  padding: 0 14px;
+  background: var(--background);
+  border: 1px solid var(--input);
+  border-radius: var(--radius);
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.folder-path.selected { color: var(--foreground); }
+
+.storage-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  background: rgba(59,130,246,0.06);
+  border: 1px solid rgba(59,130,246,0.12);
+  border-radius: var(--radius);
+  font-size: 12px;
+  color: var(--muted-foreground);
+  line-height: 1.6;
+  margin-top: 14px;
+}
+
+.storage-info svg { flex-shrink: 0; color: var(--blue); margin-top: 1px; }
+
+.storage-info strong { color: var(--foreground); }
+
+/* ============================================================
+   SUMMARY — Step 4
+   ============================================================ */
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.summary-box {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.summary-box-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.summary-box-header svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+.check-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.check-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.check-list li.done { color: var(--foreground); }
+
+.check-list li .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.check-list li .dot.green { background: var(--green); }
+.check-list li .dot.gray  { background: var(--muted-foreground); }
+
+.encrypt-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(34,197,94,0.05);
+  border: 1px solid rgba(34,197,94,0.1);
+  border-radius: var(--radius);
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin-top: 14px;
+}
+
+.encrypt-note svg { flex-shrink: 0; color: var(--green); }
+.encrypt-note strong { color: var(--foreground); }
+
+/* ============================================================
+   ACTION ROW
+   ============================================================ */
+.action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.action-row .hint {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.action-row .btn-group {
+  display: flex;
+  gap: 8px;
+}
+
+/* ============================================================
+   THEME SWITCHER
+   ============================================================ */
+.theme-switcher {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  z-index: 100;
+}
+
+.theme-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.theme-btn:hover { background: var(--accent); color: var(--foreground); }
+.theme-btn.active { background: var(--secondary); color: var(--foreground); }
+.theme-btn svg { width: 16px; height: 16px; }
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  animation: fadeInUp 0.35s ease-out;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--primary-foreground);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 640px) {
+  .hero h1 { font-size: 22px; }
+  .summary-grid { grid-template-columns: 1fr; }
+  .step-line { width: 32px; }
+  .step-label { width: 70px; font-size: 10px; }
+  .card-header { padding: 14px 18px; }
+  .card-body { padding: 18px; }
+  .action-row { flex-direction: column; gap: 10px; }
+  .action-row .btn-group { width: 100%; }
+  .action-row .btn-group .btn { flex: 1; }
+}
+</style>
+</head>
+<body>
+
+<div class="landing">
+
+  <!-- ====== THEME SWITCHER ====== -->
+  <div class="theme-switcher">
+    <button class="theme-btn active" onclick="setTheme('dark')" title="Dark">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+    </button>
+    <button class="theme-btn" onclick="setTheme('light')" title="Light">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+    <button class="theme-btn" onclick="setTheme('matrix')" title="Matrix">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    </button>
+  </div>
+
+  <!-- ====== HERO ====== -->
+  <div class="hero animate-in">
+    <div class="hero-icon">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.148 2.148A12.061 12.061 0 0116.5 7.605"/>
+      </svg>
+    </div>
+    <h1>PolyRader CS2</h1>
+    <p>Polymarket CS2 电竞预测分析工具。完成以下配置，开始你的智能预测之旅。</p>
+  </div>
+
+  <!-- ====== STEP INDICATOR ====== -->
+  <div class="container">
+    <div class="steps-row">
+      <div class="step-dot active" id="dot1">1</div>
+      <div class="step-line" id="line1"></div>
+      <div class="step-dot" id="dot2">2</div>
+      <div class="step-line" id="line2"></div>
+      <div class="step-dot" id="dot3">3</div>
+      <div class="step-line" id="line3"></div>
+      <div class="step-dot" id="dot4">4</div>
+    </div>
+    <div class="step-labels">
+      <div class="step-label active" id="label1">LLM 模型</div>
+      <div class="step-label" id="label2">Polymarket</div>
+      <div class="step-label" id="label3">本地存储</div>
+      <div class="step-label" id="label4">确认开始</div>
+    </div>
+
+    <!-- ================================================================
+         STEP 1 — LLM API Keys
+         ================================================================ -->
+    <div class="card animate-in" id="step1">
+      <div class="card-header">
+        <div class="card-header-left">
+          <div class="card-header-icon blue">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/>
+            </svg>
+          </div>
+          <div>
+            <div>配置 LLM 模型</div>
+            <div class="card-header-desc">至少配置一个模型即可启用 AI 分析。密钥使用 AES-256-GCM 本地加密。</div>
+          </div>
+        </div>
+        <span class="badge badge-blue mono" id="provider-count">0 / 6</span>
+      </div>
+
+      <div class="card-body">
+        <div class="provider-list">
+
+          <!-- OpenAI -->
+          <div class="provider-row" id="row-openai" onclick="selectProvider('openai')">
+            <div class="provider-icon pi-openai">OA</div>
+            <div class="provider-info">
+              <div class="provider-name">OpenAI</div>
+              <div class="provider-model">GPT-4o</div>
+            </div>
+            <div class="provider-status">
+              <div class="status-dot" id="dot-openai"></div>
+              <div class="toggle" id="tgl-openai"></div>
+            </div>
+          </div>
+
+          <!-- Anthropic -->
+          <div class="provider-row" id="row-anthropic" onclick="selectProvider('anthropic')">
+            <div class="provider-icon pi-anthropic">AN</div>
+            <div class="provider-info">
+              <div class="provider-name">Anthropic</div>
+              <div class="provider-model">Claude 3.5 Sonnet</div>
+            </div>
+            <div class="provider-status">
+              <div class="status-dot" id="dot-anthropic"></div>
+              <div class="toggle" id="tgl-anthropic"></div>
+            </div>
+          </div>
+
+          <!-- Google -->
+          <div class="provider-row" id="row-google" onclick="selectProvider('google')">
+            <div class="provider-icon pi-google">GO</div>
+            <div class="provider-info">
+              <div class="provider-name">Google</div>
+              <div class="provider-model">Gemini 2.0 Flash</div>
+            </div>
+            <div class="provider-status">
+              <div class="status-dot" id="dot-google"></div>
+              <div class="toggle" id="tgl-google"></div>
+            </div>
+          </div>
+
+          <!-- DeepSeek -->
+          <div class="provider-row" id="row-deepseek" onclick="selectProvider('deepseek')">
+            <div class="provider-icon pi-deepseek">DS</div>
+            <div class="provider-info">
+              <div class="provider-name">DeepSeek</div>
+              <div class="provider-model">DeepSeek-V3</div>
+            </div>
+            <div class="provider-status">
+              <div class="status-dot" id="dot-deepseek"></div>
+              <div class="toggle" id="tgl-deepseek"></div>
+            </div>
+          </div>
+
+          <!-- xAI -->
+          <div class="provider-row" id="row-xai" onclick="selectProvider('xai')">
+            <div class="provider-icon pi-xai">xA</div>
+            <div class="provider-info">
+              <div class="provider-name">xAI</div>
+              <div class="provider-model">Grok 2</div>
+            </div>
+            <div class="provider-status">
+              <div class="status-dot" id="dot-xai"></div>
+              <div class="toggle" id="tgl-xai"></div>
+            </div>
+          </div>
+
+          <!-- Groq -->
+          <div class="provider-row" id="row-groq" onclick="selectProvider('groq')">
+            <div class="provider-icon pi-groq">GQ</div>
+            <div class="provider-info">
+              <div class="provider-name">Groq</div>
+              <div class="provider-model">Llama 3.3 70B</div>
+            </div>
+            <div class="provider-status">
+              <div class="status-dot" id="dot-groq"></div>
+              <div class="toggle" id="tgl-groq"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Edit panel -->
+        <div class="provider-edit" id="provider-edit">
+          <div class="form-group">
+            <div class="form-label">
+              <span id="edit-label">API Key</span>
+              <span class="form-label-hint" id="edit-model"></span>
+            </div>
+            <input type="password" class="form-input" id="edit-key" placeholder="sk-..." autocomplete="off">
+            <div class="form-error" id="edit-error">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span></span>
+            </div>
+          </div>
+          <div class="provider-edit-actions">
+            <button class="btn btn-sm btn-outline" onclick="testKey()">测试连接</button>
+            <button class="btn btn-sm" onclick="saveKey()">保存</button>
+            <button class="btn btn-sm btn-outline" onclick="cancelEdit()" style="margin-left:auto;">取消</button>
+          </div>
+          <div class="test-result" id="test-result"></div>
+        </div>
+
+        <div class="action-row">
+          <span class="hint">可随时在设置中修改</span>
+          <div class="btn-group">
+            <button class="btn btn-secondary" onclick="goToStep(2)">跳过</button>
+            <button class="btn" onclick="goToStep(2)">下一步</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================
+         STEP 2 — Polymarket 数据源
+         ================================================================ -->
+    <div class="card animate-in" id="step2" style="display:none;">
+      <div class="card-header">
+        <div class="card-header-left">
+          <div class="card-header-icon green">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z"/>
+            </svg>
+          </div>
+          <div>
+            <div>Polymarket 数据源</div>
+            <div class="card-header-desc">以下数据源均为 Polymarket 公开 API，已预配置，无需额外设置。</div>
+          </div>
+        </div>
+        <span class="badge badge-green mono">5 个就绪</span>
+      </div>
+
+      <div class="card-body">
+        <div class="source-list">
+
+          <div class="source-row">
+            <div class="source-icon blue">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5"/>
+              </svg>
+            </div>
+            <div class="source-info">
+              <h4>Polymarket Gamma API</h4>
+              <p>市场发现、事件列表、标签分类 — 公开 API，无需认证</p>
+            </div>
+            <span class="badge badge-green">就绪</span>
+          </div>
+
+          <div class="source-row">
+            <div class="source-icon green">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5L7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5"/>
+              </svg>
+            </div>
+            <div class="source-info">
+              <h4>Polymarket CLOB API</h4>
+              <p>订单簿深度、实时价格、交易执行 — 公开 API，无需认证</p>
+            </div>
+            <span class="badge badge-green">就绪</span>
+          </div>
+
+          <div class="source-row">
+            <div class="source-icon purple">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.348 14.651a3.75 3.75 0 010-5.303m5.304 0a3.75 3.75 0 010 5.303m-7.425 2.122a6.75 6.75 0 010-9.546m9.546 0a6.75 6.75 0 010 9.546"/>
+              </svg>
+            </div>
+            <div class="source-info">
+              <h4>Polymarket WebSocket</h4>
+              <p>实时价格推送、交易事件流 — 公开 WebSocket，无需认证</p>
+            </div>
+            <span class="badge badge-green">就绪</span>
+          </div>
+
+          <div class="source-row">
+            <div class="source-icon orange">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125v-3.75"/>
+              </svg>
+            </div>
+            <div class="source-info">
+              <h4>Polygon RPC</h4>
+              <p>链上巨鲸交易追踪、地址分析 — 公共 RPC 节点，无需认证</p>
+            </div>
+            <span class="badge badge-green">就绪</span>
+          </div>
+
+          <div class="source-row">
+            <div class="source-icon purple">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+              </svg>
+            </div>
+            <div class="source-info">
+              <h4>HLTV.org</h4>
+              <p>CS2 战队排名、比赛数据、地图池统计、选手阵容 — 公开数据，自动爬取</p>
+            </div>
+            <span class="badge badge-green">就绪</span>
+          </div>
+
+        </div>
+
+        <div class="action-row">
+          <span class="hint">Polymarket 数据均为公开访问，无需 API Key</span>
+          <div class="btn-group">
+            <button class="btn btn-secondary" onclick="goToStep(1)">上一步</button>
+            <button class="btn" onclick="goToStep(3)">下一步</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================
+         STEP 3 — 本地存储路径
+         ================================================================ -->
+    <div class="card animate-in" id="step3" style="display:none;">
+      <div class="card-header">
+        <div class="card-header-left">
+          <div class="card-header-icon purple">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/>
+            </svg>
+          </div>
+          <div>
+            <div>本地存储路径</div>
+            <div class="card-header-desc">选择数据存储文件夹。所有数据（数据库、配置、缓存）将保存在此目录。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="form-group">
+          <div class="form-label">
+            <span>数据存储文件夹</span>
+            <span class="form-label-hint" id="storage-size-hint"></span>
+          </div>
+          <div class="folder-picker">
+            <div class="folder-path" id="folder-path">点击右侧按钮选择文件夹...</div>
+            <button class="btn btn-sm btn-outline" onclick="pickFolder()" id="btn-pick">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/></svg>
+              选择文件夹
+            </button>
+          </div>
+        </div>
+
+        <div class="storage-info">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <div>
+            <strong>存储内容：</strong>SQLite 数据库（市场数据、预测记录、LLM 统计）、config.json（加密密钥、应用设置）、LRU 内存缓存（运行时不落盘）。<br>
+            <strong>预估空间：</strong>初始约 5 MB，随使用增长（取决于市场数据量）。
+          </div>
+        </div>
+
+        <div class="action-row">
+          <span class="hint" id="storage-status">尚未选择文件夹</span>
+          <div class="btn-group">
+            <button class="btn btn-secondary" onclick="goToStep(2)">上一步</button>
+            <button class="btn" onclick="goToStep(4)" id="btn-step3-next" disabled>下一步</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================
+         STEP 4 — 确认 & 开始
+         ================================================================ -->
+    <div class="card animate-in" id="step4" style="display:none;">
+      <div class="card-header">
+        <div class="card-header-left">
+          <div class="card-header-icon green">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <div>确认配置</div>
+            <div class="card-header-desc">检查以下配置，确认无误后即可开始使用。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body">
+
+        <div class="summary-grid">
+          <!-- LLM -->
+          <div class="summary-box">
+            <div class="summary-box-header">
+              <svg fill="none" viewBox="0 0 24 24" stroke="var(--blue)" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+              </svg>
+              LLM 模型
+            </div>
+            <ul class="check-list" id="summary-llm"></ul>
+          </div>
+
+          <!-- Data -->
+          <div class="summary-box">
+            <div class="summary-box-header">
+              <svg fill="none" viewBox="0 0 24 24" stroke="var(--green)" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z"/>
+              </svg>
+              数据源
+            </div>
+            <ul class="check-list">
+              <li class="done"><span class="dot green"></span> Polymarket Gamma API</li>
+              <li class="done"><span class="dot green"></span> Polymarket CLOB API</li>
+              <li class="done"><span class="dot green"></span> Polymarket WebSocket</li>
+              <li class="done"><span class="dot green"></span> Polygon RPC</li>
+              <li class="done"><span class="dot green"></span> HLTV.org</li>
+            </ul>
+          </div>
+
+          <!-- Storage -->
+          <div class="summary-box">
+            <div class="summary-box-header">
+              <svg fill="none" viewBox="0 0 24 24" stroke="var(--purple)" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/>
+              </svg>
+              本地存储
+            </div>
+            <ul class="check-list">
+              <li class="done" id="summary-path"><span class="dot green"></span> <span class="mono" id="summary-path-text">—</span></li>
+            </ul>
+          </div>
+
+          <!-- Security -->
+          <div class="summary-box">
+            <div class="summary-box-header">
+              <svg fill="none" viewBox="0 0 24 24" stroke="var(--green)" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+              </svg>
+              安全
+            </div>
+            <ul class="check-list">
+              <li class="done"><span class="dot green"></span> AES-256-GCM 加密</li>
+              <li class="done"><span class="dot green"></span> 密钥本地生成</li>
+              <li class="done"><span class="dot green"></span> 数据不上传</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="encrypt-note">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
+          </svg>
+          <span>所有 API Key 使用 <strong>AES-256-GCM</strong> 加密存储在本地 config.json 中。密钥由系统自动生成，数据不会上传到任何服务器。</span>
+        </div>
+
+        <div class="action-row">
+          <span class="hint">配置可随时在设置中修改</span>
+          <div class="btn-group">
+            <button class="btn btn-secondary" onclick="goToStep(3)">上一步</button>
+            <button class="btn" onclick="finishSetup()" id="btn-finish">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              开始使用
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+
+</div><!-- /landing -->
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let currentStep = 1;
+const providers = ['openai', 'anthropic', 'google', 'deepseek', 'xai', 'groq'];
+const providerMeta = {
+  openai:    { name: 'OpenAI',    model: 'GPT-4o',            placeholder: 'sk-...',     prefix: /^sk-/ },
+  anthropic: { name: 'Anthropic', model: 'Claude 3.5 Sonnet', placeholder: 'sk-ant-...', prefix: /^sk-ant-/ },
+  google:    { name: 'Google',    model: 'Gemini 2.0 Flash',  placeholder: 'AIza...',    prefix: /^AIza/ },
+  deepseek:  { name: 'DeepSeek',  model: 'DeepSeek-V3',       placeholder: 'sk-...',     prefix: /^sk-/ },
+  xai:       { name: 'xAI',       model: 'Grok 2',            placeholder: 'xai-...',    prefix: /^xai-/ },
+  groq:      { name: 'Groq',      model: 'Llama 3.3 70B',     placeholder: 'gsk_...',    prefix: /^gsk_/ }
+};
+
+const configuredKeys = {};
+let activeProvider = null;
+let selectedFolder = '';
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function goToStep(step) {
+  // Validate: step 3 requires folder
+  if (step === 4 && !selectedFolder) {
+    goToStep(3);
+    return;
+  }
+
+  currentStep = step;
+
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('step' + i);
+    if (el) el.style.display = i === step ? '' : 'none';
+  }
+
+  // Step dots
+  for (let i = 1; i <= 4; i++) {
+    const dot = document.getElementById('dot' + i);
+    const label = document.getElementById('label' + i);
+    if (!dot || !label) continue;
+    dot.className = 'step-dot';
+    label.className = 'step-label';
+    if (i < step) { dot.classList.add('done'); label.classList.add('done'); }
+    if (i === step) { dot.classList.add('active'); label.classList.add('active'); }
+  }
+
+  // Lines
+  for (let i = 1; i <= 3; i++) {
+    const line = document.getElementById('line' + i);
+    if (line) line.className = 'step-line' + (step > i ? ' done' : '');
+  }
+
+  if (step === 4) updateSummary();
+
+  // Re-trigger animation
+  const card = document.getElementById('step' + step);
+  if (card) {
+    card.classList.remove('animate-in');
+    void card.offsetWidth;
+    card.classList.add('animate-in');
+  }
+
+  document.querySelector('.landing').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ============================================================
+// PROVIDER EDIT
+// ============================================================
+function selectProvider(provider) {
+  if (activeProvider === provider) { cancelEdit(); return; }
+  if (activeProvider) cancelEdit(false);
+
+  activeProvider = provider;
+
+  // Highlight row
+  document.querySelectorAll('.provider-row').forEach(r => r.classList.remove('selected'));
+  document.getElementById('row-' + provider).classList.add('selected');
+
+  // Show edit panel
+  const panel = document.getElementById('provider-edit');
+  panel.classList.add('show');
+
+  const meta = providerMeta[provider];
+  document.getElementById('edit-label').textContent = meta.name + ' API Key';
+  document.getElementById('edit-model').textContent = meta.model;
+
+  const input = document.getElementById('edit-key');
+  input.placeholder = meta.placeholder;
+  input.value = configuredKeys[provider] || '';
+  input.className = 'form-input';
+  input.focus();
+
+  document.getElementById('edit-error').classList.remove('show');
+  document.getElementById('test-result').innerHTML = '';
+}
+
+function cancelEdit(resetHighlight = true) {
+  activeProvider = null;
+  document.getElementById('provider-edit').classList.remove('show');
+  document.getElementById('edit-key').value = '';
+  document.getElementById('edit-key').className = 'form-input';
+  document.getElementById('edit-error').classList.remove('show');
+  document.getElementById('test-result').innerHTML = '';
+  if (resetHighlight) {
+    document.querySelectorAll('.provider-row').forEach(r => r.classList.remove('selected'));
+  }
+}
+
+function saveKey() {
+  if (!activeProvider) return;
+  const input = document.getElementById('edit-key');
+  const key = input.value.trim();
+
+  if (!key) { showEditError('请输入 API Key'); return; }
+
+  const meta = providerMeta[activeProvider];
+  if (meta.prefix && !meta.prefix.test(key)) {
+    showEditError('API Key 格式不正确，请检查后重试');
+    return;
+  }
+
+  configuredKeys[activeProvider] = key;
+  updateProviderRow(activeProvider);
+  cancelEdit();
+  updateProviderCount();
+}
+
+function showEditError(msg) {
+  const el = document.getElementById('edit-error');
+  el.classList.add('show');
+  el.querySelector('span').textContent = msg;
+  document.getElementById('edit-key').classList.add('error');
+}
+
+function testKey() {
+  if (!activeProvider) return;
+  const key = document.getElementById('edit-key').value.trim();
+  if (!key) { showEditError('请先输入 API Key'); return; }
+
+  const resultEl = document.getElementById('test-result');
+  resultEl.innerHTML = '<span style="color:var(--yellow);">正在测试连接...</span>';
+
+  setTimeout(() => {
+    resultEl.innerHTML = '<span style="color:var(--green);">✓ 连接成功 — 延迟 245ms</span>';
+  }, 1500);
+}
+
+function updateProviderRow(provider) {
+  const row = document.getElementById('row-' + provider);
+  const dot = document.getElementById('dot-' + provider);
+  const tgl = document.getElementById('tgl-' + provider);
+
+  if (configuredKeys[provider]) {
+    row.classList.add('configured');
+    dot.classList.add('on');
+    tgl.classList.add('on');
+  } else {
+    row.classList.remove('configured');
+    dot.classList.remove('on');
+    tgl.classList.remove('on');
+  }
+}
+
+function updateProviderCount() {
+  const count = Object.keys(configuredKeys).length;
+  document.getElementById('provider-count').textContent = count + ' / 6';
+}
+
+// ============================================================
+// FOLDER PICKER
+// ============================================================
+function pickFolder() {
+  // In Tauri: use native dialog. Here we simulate with a prompt.
+  const path = prompt('请输入数据存储文件夹路径（Tauri 桌面版将使用原生文件夹选择器）：', selectedFolder || '/Users/' + (navigator.userAgent.includes('Mac') ? 'username' : 'user') + '/Documents/PolyRader');
+
+  if (path && path.trim()) {
+    selectedFolder = path.trim();
+    const el = document.getElementById('folder-path');
+    el.textContent = selectedFolder;
+    el.classList.add('selected');
+
+    document.getElementById('storage-status').textContent = '已选择存储路径';
+    document.getElementById('btn-step3-next').disabled = false;
+
+    // Estimate size
+    document.getElementById('storage-size-hint').textContent = '预估 ~5 MB';
+  }
+}
+
+// ============================================================
+// SUMMARY
+// ============================================================
+function updateSummary() {
+  // LLM
+  let llmHtml = '';
+  for (const p of providers) {
+    const meta = providerMeta[p];
+    const ok = !!configuredKeys[p];
+    llmHtml += '<li class="' + (ok ? 'done' : '') + '">' +
+      '<span class="dot ' + (ok ? 'green' : 'gray') + '"></span> ' +
+      meta.name + ' ' + meta.model + ' — ' + (ok ? '已配置' : '未配置') +
+      '</li>';
+  }
+  document.getElementById('summary-llm').innerHTML = llmHtml;
+
+  // Storage path
+  document.getElementById('summary-path-text').textContent = selectedFolder || '—';
+}
+
+// ============================================================
+// FINISH
+// ============================================================
+function finishSetup() {
+  const btn = document.getElementById('btn-finish');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 正在初始化...';
+
+  setTimeout(() => {
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> 初始化完成';
+
+    setTimeout(() => {
+      const llmCount = Object.keys(configuredKeys).length;
+      alert('配置完成！即将进入 PolyRader CS2 主界面。\n\n' +
+        'LLM 模型: ' + llmCount + ' / 6 个已配置\n' +
+        'Polymarket: 5 个数据源就绪\n' +
+        '存储路径: ' + (selectedFolder || '默认路径') + '\n' +
+        '加密方式: AES-256-GCM 本地存储');
+    }, 600);
+  }, 2000);
+}
+
+// ============================================================
+// THEME
+// ============================================================
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
+  const btns = document.querySelectorAll('.theme-btn');
+  if (theme === 'dark') btns[0].classList.add('active');
+  else if (theme === 'light') btns[1].classList.add('active');
+  else if (theme === 'matrix') btns[2].classList.add('active');
+  try { localStorage.setItem('polyrader-theme', theme); } catch(e) {}
+}
+
+// Restore theme on load
+(function() {
+  let saved = 'dark';
+  try { saved = localStorage.getItem('polyrader-theme') || 'dark'; } catch(e) {}
+  setTheme(saved);
+})();
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  goToStep(1);
+});
+</script>
+
+</body>
+</html>

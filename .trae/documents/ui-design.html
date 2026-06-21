@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PolyRader CS2 — UI Design</title>
+<style>
+/* ============================================================
+   shadcn/ui DESIGN TOKENS — Dark / Light / Matrix
+   Relaxed spacing, rounded corners, subtle shadows
+   ============================================================ */
+:root, [data-theme="dark"] {
+  --background: #0A0A0A;
+  --foreground: #FAFAFA;
+  --card: #171717;
+  --card-foreground: #FAFAFA;
+  --popover: #171717;
+  --popover-foreground: #FAFAFA;
+  --primary: #FAFAFA;
+  --primary-foreground: #171717;
+  --secondary: #262626;
+  --secondary-foreground: #FAFAFA;
+  --muted: #262626;
+  --muted-foreground: #A1A1AA;
+  --accent: #262626;
+  --accent-foreground: #FAFAFA;
+  --destructive: #7F1D1D;
+  --destructive-foreground: #FCA5A5;
+  --border: #27272A;
+  --input: #27272A;
+  --ring: #FAFAFA;
+  --chart-1: #3B82F6;
+  --chart-2: #22C55E;
+  --chart-3: #EAB308;
+  --chart-4: #A855F7;
+  --chart-5: #F97316;
+  --radius: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-sm: 0.375rem;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+  --shadow: 0 1px 3px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-lg: 0 4px 6px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.4);
+  --green: #22C55E;
+  --red: #EF4444;
+  --yellow: #EAB308;
+  --orange: #F97316;
+  --purple: #A855F7;
+  --cyan: #06B6D4;
+  --blue: #3B82F6;
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "SF Mono", Menlo, Monaco, "Courier New", monospace;
+  --sidebar-bg: #0F0F0F;
+  --statusbar-bg: #1A1A1A;
+}
+[data-theme="light"] {
+  --background: #FFFFFF;
+  --foreground: #0A0A0A;
+  --card: #FFFFFF;
+  --card-foreground: #0A0A0A;
+  --popover: #FFFFFF;
+  --popover-foreground: #0A0A0A;
+  --primary: #171717;
+  --primary-foreground: #FAFAFA;
+  --secondary: #F5F5F5;
+  --secondary-foreground: #171717;
+  --muted: #F5F5F5;
+  --muted-foreground: #737373;
+  --accent: #F5F5F5;
+  --accent-foreground: #171717;
+  --destructive: #FEE2E2;
+  --destructive-foreground: #DC2626;
+  --border: #E5E5E5;
+  --input: #E5E5E5;
+  --ring: #0A0A0A;
+  --chart-1: #2563EB;
+  --chart-2: #16A34A;
+  --chart-3: #CA8A04;
+  --chart-4: #9333EA;
+  --chart-5: #EA580C;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-lg: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+  --green: #16A34A;
+  --red: #DC2626;
+  --yellow: #CA8A04;
+  --orange: #EA580C;
+  --purple: #9333EA;
+  --cyan: #0891B2;
+  --blue: #2563EB;
+  --sidebar-bg: #FAFAFA;
+  --statusbar-bg: #F5F5F5;
+}
+[data-theme="matrix"] {
+  --background: #0D0D0D;
+  --foreground: #00FF41;
+  --card: #111111;
+  --card-foreground: #00FF41;
+  --popover: #111111;
+  --popover-foreground: #00FF41;
+  --primary: #00FF41;
+  --primary-foreground: #0D0D0D;
+  --secondary: #1A1A1A;
+  --secondary-foreground: #00FF41;
+  --muted: #1A1A1A;
+  --muted-foreground: #2A5A2A;
+  --accent: #1A1A1A;
+  --accent-foreground: #00FF41;
+  --destructive: #330000;
+  --destructive-foreground: #FF3333;
+  --border: #1A2A1A;
+  --input: #1A2A1A;
+  --ring: #00FF41;
+  --chart-1: #00FF41;
+  --chart-2: #00FF41;
+  --chart-3: #FFCC00;
+  --chart-4: #CC44CC;
+  --chart-5: #FF8800;
+  --shadow-sm: 0 1px 2px rgba(0,255,65,0.08);
+  --shadow: 0 1px 3px rgba(0,255,65,0.12), 0 1px 2px rgba(0,255,65,0.08);
+  --shadow-lg: 0 4px 6px rgba(0,255,65,0.15), 0 2px 4px rgba(0,255,65,0.1);
+  --green: #00FF41;
+  --red: #FF3333;
+  --yellow: #FFCC00;
+  --orange: #FF8800;
+  --purple: #CC44CC;
+  --cyan: #00CCCC;
+  --blue: #4488FF;
+  --sidebar-bg: #0A0A0A;
+  --statusbar-bg: #111111;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: var(--font-ui); background: var(--background); color: var(--foreground);
+  font-size: 14px; line-height: 1.6; overflow: hidden; height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+.mono { font-family: var(--font-mono); }
+
+/* LAYOUT */
+.app { display: flex; flex-direction: column; height: 100vh; }
+.main-row { display: flex; flex: 1; overflow: hidden; }
+
+.sidebar {
+  width: 260px; background: var(--sidebar-bg); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden;
+}
+.sidebar-brand {
+  padding: 20px 20px 16px; display: flex; align-items: center; gap: 12px;
+}
+.sidebar-brand svg { flex-shrink: 0; }
+.sidebar-brand-text { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
+.sidebar-brand-sub { font-size: 11px; color: var(--muted-foreground); font-weight: 400; }
+.sidebar-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+.sidebar-section {
+  padding: 16px 20px 4px; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted-foreground);
+}
+.sidebar-item {
+  display: flex; align-items: center; gap: 10px; padding: 8px 20px; margin: 0 8px;
+  font-size: 14px; cursor: pointer; color: var(--muted-foreground); text-decoration: none;
+  border-radius: var(--radius-sm); transition: all 0.15s;
+}
+.sidebar-item:hover { background: var(--accent); color: var(--accent-foreground); }
+.sidebar-item.active { background: var(--secondary); color: var(--foreground); font-weight: 500; }
+.sidebar-item svg { flex-shrink: 0; opacity: 0.6; }
+.sidebar-item.active svg { opacity: 1; }
+
+.content-area { flex: 1; overflow-y: auto; padding: 32px 40px; display: flex; flex-direction: column; gap: 24px; }
+
+.statusbar {
+  height: 28px; background: var(--statusbar-bg); color: var(--muted-foreground);
+  display: flex; align-items: center; padding: 0 16px; font-size: 12px;
+  gap: 16px; flex-shrink: 0; user-select: none; border-top: 1px solid var(--border);
+}
+.statusbar .spacer { flex: 1; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+
+/* COMPONENTS — shadcn/ui conventions */
+.page-title { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; }
+.page-desc { font-size: 14px; color: var(--muted-foreground); }
+
+/* Card */
+.stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.stat-box {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 20px 24px; box-shadow: var(--shadow-sm);
+}
+.stat-label { font-size: 12px; color: var(--muted-foreground); font-weight: 500; margin-bottom: 4px; }
+.stat-value { font-family: var(--font-mono); font-size: 28px; font-weight: 700; line-height: 1.2; }
+.stat-sub { font-size: 12px; font-family: var(--font-mono); margin-top: 4px; }
+.stat-sub.up { color: var(--green); } .stat-sub.down { color: var(--red); }
+
+/* Table */
+.data-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.data-table th {
+  text-align: left; padding: 10px 16px; font-size: 12px; font-weight: 500;
+  color: var(--muted-foreground); border-bottom: 1px solid var(--border);
+  white-space: nowrap; height: 40px;
+}
+.data-table th.right { text-align: right; }
+.data-table td {
+  padding: 12px 16px; font-size: 14px; border-bottom: 1px solid var(--border);
+  white-space: nowrap; height: 48px;
+}
+.data-table tr:hover td { background: var(--accent); }
+.data-table td.right { text-align: right; font-family: var(--font-mono); }
+.data-table td.price { font-family: var(--font-mono); font-weight: 600; }
+
+/* Badge */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px;
+  font-size: 12px; font-weight: 500; border-radius: 9999px; font-family: var(--font-mono);
+}
+.badge-green { background: rgba(34,197,94,0.12); color: var(--green); }
+.badge-red { background: rgba(239,68,68,0.12); color: var(--red); }
+.badge-yellow { background: rgba(234,179,8,0.12); color: var(--yellow); }
+.badge-purple { background: rgba(168,85,247,0.12); color: var(--purple); }
+.badge-cyan { background: rgba(6,182,212,0.12); color: var(--cyan); }
+.badge-blue { background: rgba(59,130,246,0.12); color: var(--blue); }
+
+/* Button */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+  font-size: 14px; font-family: var(--font-ui); cursor: pointer; border: none;
+  color: var(--primary-foreground); background: var(--primary);
+  border-radius: var(--radius); font-weight: 500; height: 40px;
+  box-shadow: var(--shadow-sm); transition: all 0.15s;
+}
+.btn:hover { opacity: 0.9; }
+.btn-secondary {
+  background: var(--secondary); color: var(--secondary-foreground);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { background: var(--accent); }
+.btn svg { flex-shrink: 0; }
+.btn-sm { padding: 4px 12px; font-size: 12px; height: 32px; }
+
+/* Filter Pills */
+.filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.filter-pill {
+  padding: 6px 14px; font-size: 13px; border: 1px solid var(--border);
+  cursor: pointer; color: var(--muted-foreground); border-radius: 9999px;
+  transition: all 0.15s;
+}
+.filter-pill:hover { border-color: var(--foreground); color: var(--foreground); }
+.filter-pill.active { background: var(--primary); border-color: var(--primary); color: var(--primary-foreground); }
+
+/* Panel */
+.panel {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;
+}
+.panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; font-size: 13px; font-weight: 600;
+  color: var(--foreground); border-bottom: 1px solid var(--border);
+}
+.panel-body { padding: 20px; }
+
+/* Chart */
+.chart-area {
+  height: 240px; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); position: relative; overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.chart-svg { width: 100%; height: 100%; }
+
+/* Ticker */
+.ticker {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 10px 16px; display: flex;
+  gap: 24px; overflow-x: auto; font-size: 13px; box-shadow: var(--shadow-sm);
+}
+.ticker-item { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.ticker-name { color: var(--muted-foreground); }
+.ticker-price { font-family: var(--font-mono); font-weight: 600; }
+.ticker-change { font-family: var(--font-mono); font-size: 12px; }
+.ticker-change.up { color: var(--green); } .ticker-change.down { color: var(--red); }
+
+/* Alert */
+.alert-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 16px; font-size: 13px; border-bottom: 1px solid var(--border); }
+.alert-item:hover { background: var(--accent); }
+.alert-item:last-child { border-bottom: none; }
+.alert-sev { flex-shrink: 0; font-size: 10px; width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; }
+.alert-body { flex: 1; min-width: 0; }
+.alert-title { font-weight: 600; }
+.alert-desc { font-size: 12px; color: var(--muted-foreground); margin-top: 2px; }
+.alert-time { font-size: 11px; color: var(--muted-foreground); font-family: var(--font-mono); flex-shrink: 0; }
+
+/* Signal */
+.signal-row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.signal-row:last-child { border-bottom: none; }
+.signal-match { flex: 2; font-weight: 600; }
+.signal-vals { flex: 3; display: flex; gap: 6px; }
+.signal-val { flex: 1; text-align: center; padding: 4px 8px; font-family: var(--font-mono); font-size: 13px; font-weight: 600; border-radius: var(--radius-sm); }
+.signal-val.market { background: rgba(59,130,246,0.1); color: var(--blue); }
+.signal-val.model { background: rgba(34,197,94,0.1); color: var(--green); }
+.signal-val.community { background: rgba(168,85,247,0.1); color: var(--purple); }
+.signal-dev { flex: 1; text-align: center; font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+.signal-dev.pos { color: var(--green); } .signal-dev.neg { color: var(--red); }
+
+/* Progress */
+.progress { height: 6px; background: var(--secondary); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 3px; }
+.progress-fill.blue { background: var(--blue); } .progress-fill.green { background: var(--green); }
+.progress-fill.red { background: var(--red); } .progress-fill.purple { background: var(--purple); }
+.progress-fill.orange { background: var(--orange); }
+
+/* Factor Card */
+.factor-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow-sm);
+}
+.factor-card .factor-head { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.factor-card .factor-name { font-size: 13px; font-weight: 600; }
+.factor-card .factor-wt { font-size: 11px; color: var(--muted-foreground); font-family: var(--font-mono); }
+.factor-card .factor-val { font-family: var(--font-mono); font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.factor-card .factor-dir { font-size: 11px; }
+.factor-card .factor-dir.up { color: var(--green); } .factor-card .factor-dir.down { color: var(--red); }
+
+/* Map Bar */
+.map-bar { margin-bottom: 10px; }
+.map-bar-head { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+.map-bar-head .map-name { color: var(--foreground); font-weight: 500; }
+.map-bar-head .map-pct { font-family: var(--font-mono); color: var(--muted-foreground); font-size: 11px; }
+.map-bar-dual { display: flex; height: 6px; border-radius: 3px; overflow: hidden; }
+.map-bar-a { background: var(--blue); } .map-bar-b { background: var(--red); }
+
+/* Ring */
+.ring-wrap { position: relative; width: 100px; height: 100px; margin: 0 auto; }
+.ring-wrap svg { width: 100px; height: 100px; transform: rotate(-90deg); }
+.ring-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+.ring-score { font-family: var(--font-mono); font-size: 28px; font-weight: 700; color: var(--red); }
+.ring-label { font-size: 10px; color: var(--muted-foreground); text-transform: uppercase; margin-top: 2px; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+.grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+
+/* Tabs */
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.tab-item {
+  padding: 10px 20px; font-size: 14px; cursor: pointer; color: var(--muted-foreground);
+  border-bottom: 2px solid transparent; font-weight: 500; transition: all 0.15s;
+}
+.tab-item:hover { color: var(--foreground); }
+.tab-item.active { color: var(--foreground); border-bottom-color: var(--foreground); }
+
+/* Theme Switcher */
+.theme-switch { display: flex; gap: 4px; }
+.theme-btn {
+  width: 32px; height: 32px; border: 1px solid var(--border); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; background: transparent;
+  color: var(--muted-foreground); border-radius: var(--radius-sm); transition: all 0.15s;
+}
+.theme-btn:hover { background: var(--accent); color: var(--foreground); }
+.theme-btn.active { background: var(--secondary); color: var(--foreground); border-color: var(--foreground); }
+.theme-btn svg { width: 14px; height: 14px; }
+
+/* LLM Consensus Card */
+.consensus-card {
+  background: var(--card); border: 2px solid var(--blue); border-radius: var(--radius-lg);
+  padding: 20px; box-shadow: var(--shadow);
+}
+.consensus-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.consensus-pred { font-family: var(--font-mono); font-size: 36px; font-weight: 700; color: var(--blue); }
+.consensus-meta { font-size: 12px; color: var(--muted-foreground); }
+
+/* LLM Provider Card */
+.llm-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 16px; box-shadow: var(--shadow-sm);
+}
+.llm-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.llm-card-name { font-size: 14px; font-weight: 600; }
+.llm-card-pred { font-family: var(--font-mono); font-size: 24px; font-weight: 700; }
+.llm-card-conf { font-size: 11px; color: var(--muted-foreground); margin-top: 4px; }
+
+[data-theme="matrix"] .stat-value { text-shadow: 0 0 8px rgba(0,255,65,0.3); }
+[data-theme="matrix"] .ring-score { text-shadow: 0 0 10px rgba(255,51,51,0.5); }
+[data-theme="matrix"] .consensus-pred { text-shadow: 0 0 12px rgba(68,136,255,0.4); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="main-row">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-brand">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <div>
+          <div class="sidebar-brand-text">PolyRader</div>
+          <div class="sidebar-brand-sub">CS2 Prediction Tool</div>
+        </div>
+      </div>
+      <div class="sidebar-list">
+        <div class="sidebar-section">Markets</div>
+        <a class="sidebar-item active" href="#/" data-route="/">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          市场总览
+        </a>
+        <a class="sidebar-item" href="#/daily" data-route="/daily">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4m0 10v4M3 12h4m10 0h4M5.6 5.6l2.8 2.8m7.2 7.2l2.8 2.8M5.6 18.4l2.8-2.8m7.2-7.2l2.8-2.8"/></svg>
+          每日看板
+        </a>
+        <a class="sidebar-item" href="#/match/navi-faze" data-route="/match/navi-faze">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          比赛分析
+        </a>
+        <div class="sidebar-section">Analysis</div>
+        <a class="sidebar-item" href="#/whales" data-route="/whales">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          巨鲸追踪
+        </a>
+        <a class="sidebar-item" href="#/esports" data-route="/esports">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H9.5L8.5 8h7L14.5 2Z"/><path d="M8.5 8 7 22h10l-1.5-14"/><path d="M2 17h20"/><path d="M12 8v14"/></svg>
+          赛事分析
+        </a>
+        <a class="sidebar-item" href="#/signals" data-route="/signals">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="12" x2="22" y2="12"/><polyline points="12 2 22 12 12 22"/></svg>
+          信号对比
+        </a>
+        <div class="sidebar-section">AI</div>
+        <a class="sidebar-item" href="#/ai/config" data-route="/ai/config">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="2" x2="9" y2="4"/><line x1="15" y1="2" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="22"/><line x1="15" y1="20" x2="15" y2="22"/><line x1="20" y1="9" x2="22" y2="9"/><line x1="20" y1="15" x2="22" y2="15"/><line x1="4" y1="9" x2="2" y2="9"/><line x1="4" y1="15" x2="2" y2="15"/></svg>
+          AI 配置
+        </a>
+        <a class="sidebar-item" href="#/ai/stats" data-route="/ai/stats">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          AI 胜率
+        </a>
+      </div>
+      <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:11px;color:var(--muted-foreground);font-weight:500">THEME</span>
+        <div class="theme-switch">
+          <button class="theme-btn active" data-theme="dark" onclick="switchTheme('dark')" title="Dark">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+          <button class="theme-btn" data-theme="light" onclick="switchTheme('light')" title="Light">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
+          <button class="theme-btn" data-theme="matrix" onclick="switchTheme('matrix')" title="Matrix">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content-area" id="pageContent"></div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div class="statusbar">
+    <span style="display:flex;align-items:center;gap:6px"><span class="status-dot"></span> Connected</span>
+    <span>WS 45ms</span>
+    <span>Data 2s ago</span>
+    <span class="spacer"></span>
+    <span id="statusRoute">/</span>
+    <span>24 markets</span>
+    <span>3 alerts</span>
+  </div>
+</div>
+
+<script>
+const ROUTES = {
+  '/': { title: '市场总览', desc: 'CS2 活跃市场一览，实时价格与交易量', render: renderDashboard },
+  '/daily': { title: '每日看板', desc: '自动分析当日比赛，LLM 预分析 + 关注度排序', render: renderDaily },
+  '/match/navi-faze': { title: '比赛分析', desc: 'NaVi vs FaZe — IEM Katowice 2025', render: renderMatch },
+  '/whales': { title: '巨鲸追踪', desc: '大户持仓追踪、异常行为评分、可疑交易告警', render: renderWhales },
+  '/esports': { title: '赛事分析', desc: '战队/选手数据面板、赛程与预测信号', render: renderEsports },
+  '/signals': { title: '信号对比', desc: 'Polymarket 赔率 vs HLTV 排名 vs 社区预测', render: renderSignals },
+  '/ai/config': { title: 'AI 配置', desc: 'LLM API Key 管理、连通性测试、配额与用量监控', render: renderAiConfig },
+  '/ai/stats': { title: 'AI 胜率', desc: 'LLM 排行榜、投注统计、资金分配、置信度校准、胜率分析', render: renderAiStats },
+};
+
+function getRoute() { const h = window.location.hash.slice(1) || '/'; return ROUTES[h] ? h : '/'; }
+function navigate(p) { window.location.hash = '#' + p; }
+
+function renderPage() {
+  const route = getRoute();
+  const cfg = ROUTES[route] || ROUTES['/'];
+  document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+  const link = document.querySelector('.sidebar-item[data-route="' + route + '"]');
+  if (link) link.classList.add('active');
+  document.getElementById('statusRoute').textContent = route;
+  document.getElementById('pageContent').innerHTML =
+    '<div class="page-title">' + cfg.title + '</div><div class="page-desc">' + cfg.desc + '</div>' + cfg.render();
+}
+window.addEventListener('hashchange', renderPage);
+
+function switchTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('polyrader-theme', t);
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === t));
+}
+switchTheme(localStorage.getItem('polyrader-theme') || 'dark');
+
+// ============================================================
+// PAGE RENDERERS — 7 pages
+// ============================================================
+
+function renderDashboard() {
+  return '<div class="stat-row"><div class="stat-box"><div class="stat-label">活跃市场</div><div class="stat-value">24</div><div class="stat-sub up">+3 vs 昨日</div></div><div class="stat-box"><div class="stat-label">24h 交易量</div><div class="stat-value">$1.24M</div><div class="stat-sub up">+12.5%</div></div><div class="stat-box"><div class="stat-label">异常告警</div><div class="stat-value" style="color:var(--red)">3</div><div class="stat-sub down">需关注</div></div><div class="stat-box"><div class="stat-label">模型信号</div><div class="stat-value" style="color:var(--green)">8</div><div class="stat-sub up">+2 高置信</div></div></div><div class="ticker"><div class="ticker-item"><span class="ticker-name">NaVi vs FaZe</span><span class="ticker-price">$0.62</span><span class="ticker-change up">+5.2%</span></div><div class="ticker-item"><span class="ticker-name">G2 vs Vitality</span><span class="ticker-price">$0.55</span><span class="ticker-change down">-2.1%</span></div><div class="ticker-item"><span class="ticker-name">Spirit vs MOUZ</span><span class="ticker-price">$0.48</span><span class="ticker-change up">+12.8%</span></div><div class="ticker-item"><span class="ticker-name">ENCE vs Astralis</span><span class="ticker-price">$0.41</span><span class="ticker-change up">+3.4%</span></div><div class="ticker-item"><span class="ticker-name">Heroic vs BIG</span><span class="ticker-price">$0.57</span><span class="ticker-change down">-0.8%</span></div><div class="ticker-item"><span class="ticker-name">Cloud9 vs FURIA</span><span class="ticker-price">$0.51</span><span class="ticker-change up">+7.1%</span></div></div><div style="display:flex;gap:12px;align-items:center"><div class="filter-row"><span class="filter-pill active">全部</span><span class="filter-pill">S-Tier</span><span class="filter-pill">A-Tier</span><span class="filter-pill">即将开始</span><span class="filter-pill">进行中</span></div><span style="font-size:13px;color:var(--muted-foreground)">24 markets</span></div><div class="panel"><div class="panel-header"><span>CS2 Active Markets</span></div><table class="data-table"><thead><tr><th>Market</th><th>Event</th><th>Tier</th><th class="right">Yes Price</th><th class="right">24h Chg</th><th class="right">Volume</th><th class="right">Liquidity</th><th>Signal</th></tr></thead><tbody><tr><td style="font-weight:600;color:var(--blue);cursor:pointer" onclick="navigate(\'/match/navi-faze\')">Spirit wins?</td><td>IEM Katowice</td><td><span class="badge badge-blue">S</span></td><td class="right price">$0.48</td><td class="right" style="color:var(--green)">+12.8%</td><td class="right">$320K</td><td class="right">$85K</td><td><span class="badge badge-green">BUY +9%</span></td></tr><tr><td style="font-weight:600;color:var(--blue);cursor:pointer" onclick="navigate(\'/match/navi-faze\')">NaVi wins?</td><td>IEM Katowice</td><td><span class="badge badge-blue">S</span></td><td class="right price">$0.62</td><td class="right" style="color:var(--green)">+5.2%</td><td class="right">$245K</td><td class="right">$72K</td><td><span class="badge badge-green">BUY +7%</span></td></tr><tr><td style="font-weight:600">G2 wins?</td><td>BLAST Major</td><td><span class="badge badge-blue">S</span></td><td class="right price">$0.55</td><td class="right" style="color:var(--red)">-2.1%</td><td class="right">$180K</td><td class="right">$58K</td><td><span class="badge badge-red">SELL -7%</span></td></tr><tr><td style="font-weight:600">ENCE wins?</td><td>ESL Pro League</td><td><span class="badge badge-purple">A</span></td><td class="right price">$0.41</td><td class="right" style="color:var(--green)">+3.4%</td><td class="right">$95K</td><td class="right">$28K</td><td><span class="badge badge-yellow">HOLD</span></td></tr><tr><td style="font-weight:600">Heroic wins?</td><td>ESL Pro League</td><td><span class="badge badge-purple">A</span></td><td class="right price">$0.57</td><td class="right" style="color:var(--red)">-0.8%</td><td class="right">$78K</td><td class="right">$22K</td><td><span class="badge badge-yellow">HOLD</span></td></tr><tr><td style="font-weight:600">Cloud9 wins?</td><td>BLAST Major</td><td><span class="badge badge-blue">S</span></td><td class="right price">$0.51</td><td class="right" style="color:var(--green)">+7.1%</td><td class="right">$156K</td><td class="right">$44K</td><td><span class="badge badge-green">BUY +5%</span></td></tr><tr><td style="font-weight:600">FaZe wins?</td><td>IEM Katowice</td><td><span class="badge badge-blue">S</span></td><td class="right price">$0.38</td><td class="right" style="color:var(--red)">-5.2%</td><td class="right">$245K</td><td class="right">$72K</td><td><span class="badge badge-red">SELL -7%</span></td></tr></tbody></table></div>';
+}
+
+function renderDaily() {
+  return '<div class="stat-row"><div class="stat-box"><div class="stat-label">今日比赛</div><div class="stat-value">8</div><div class="stat-sub up">+2 vs 昨日</div></div><div class="stat-box"><div class="stat-label">推荐关注</div><div class="stat-value" style="color:var(--green)">3</div><div class="stat-sub up">TOP 3</div></div><div class="stat-box"><div class="stat-label">高偏差机会</div><div class="stat-value" style="color:var(--orange)">2</div><div class="stat-sub down">偏差 >8%</div></div><div class="stat-box"><div class="stat-label">巨鲸异动</div><div class="stat-value" style="color:var(--red)">1</div><div class="stat-sub down">需关注</div></div></div><div class="panel"><div class="panel-header"><span>Today\'s Top Picks</span></div><div class="panel-body"><div class="grid-3"><div class="factor-card" style="border-color:var(--blue)"><div class="factor-head"><span class="factor-name" style="color:var(--blue)">#1 NaVi vs FaZe</span><span class="factor-wt" style="color:var(--green)">92</span></div><div style="font-size:12px;color:var(--muted-foreground);margin-bottom:6px">IEM Katowice · S-Tier · BO3</div><div style="display:flex;gap:12px;margin-bottom:6px"><span style="font-size:12px;color:var(--muted-foreground)">预测:</span><span class="mono" style="color:var(--green);font-weight:600">NaVi 71%</span><span style="font-size:12px;color:var(--muted-foreground)">市场:</span><span class="mono" style="color:var(--blue)">$0.62</span></div><div style="display:flex;gap:6px;margin-bottom:10px"><span class="badge badge-green">偏差 +9%</span><span class="badge badge-red">巨鲸活跃</span></div><div style="display:flex;gap:8px"><button class="btn btn-sm" onclick="navigate(\'/match/navi-faze\')">深度分析</button><button class="btn btn-secondary btn-sm">快速下单</button></div></div><div class="factor-card" style="border-color:var(--blue)"><div class="factor-head"><span class="factor-name" style="color:var(--blue)">#2 Spirit vs MOUZ</span><span class="factor-wt" style="color:var(--green)">85</span></div><div style="font-size:12px;color:var(--muted-foreground);margin-bottom:6px">IEM Katowice · S-Tier · BO3</div><div style="display:flex;gap:12px;margin-bottom:6px"><span style="font-size:12px;color:var(--muted-foreground)">预测:</span><span class="mono" style="color:var(--green);font-weight:600">Spirit 57%</span><span style="font-size:12px;color:var(--muted-foreground)">市场:</span><span class="mono" style="color:var(--blue)">$0.48</span></div><div style="display:flex;gap:6px;margin-bottom:10px"><span class="badge badge-green">偏差 +9%</span><span class="badge badge-red">巨鲸活跃</span></div><div style="display:flex;gap:8px"><button class="btn btn-sm">深度分析</button><button class="btn btn-secondary btn-sm">快速下单</button></div></div><div class="factor-card"><div class="factor-head"><span class="factor-name">#3 G2 vs Vitality</span><span class="factor-wt" style="color:var(--orange)">78</span></div><div style="font-size:12px;color:var(--muted-foreground);margin-bottom:6px">BLAST Major · S-Tier · BO3</div><div style="display:flex;gap:12px;margin-bottom:6px"><span style="font-size:12px;color:var(--muted-foreground)">预测:</span><span class="mono" style="color:var(--red);font-weight:600">G2 48%</span><span style="font-size:12px;color:var(--muted-foreground)">市场:</span><span class="mono" style="color:var(--blue)">$0.55</span></div><div style="display:flex;gap:6px;margin-bottom:10px"><span class="badge badge-red">偏差 -7%</span></div><div style="display:flex;gap:8px"><button class="btn btn-sm">深度分析</button><button class="btn btn-secondary btn-sm">快速下单</button></div></div></div></div></div><div class="panel"><div class="panel-header"><span>All Matches by Attention Score</span></div><table class="data-table"><thead><tr><th>Score</th><th>Match</th><th>Prediction</th><th class="right">Market</th><th class="right">Deviation</th><th class="right">Volume</th><th>Action</th></tr></thead><tbody><tr><td><span class="badge badge-green">92</span></td><td style="font-weight:600">NaVi vs FaZe</td><td>NaVi 71%</td><td class="right price">$0.62</td><td class="right" style="color:var(--green)">+9%</td><td class="right">$245K</td><td><button class="btn btn-sm" onclick="navigate(\'/match/navi-faze\')">分析</button></td></tr><tr><td><span class="badge badge-green">85</span></td><td style="font-weight:600">Spirit vs MOUZ</td><td>Spirit 57%</td><td class="right price">$0.48</td><td class="right" style="color:var(--green)">+9%</td><td class="right">$320K</td><td><button class="btn btn-sm">分析</button></td></tr><tr><td><span class="badge badge-yellow">78</span></td><td style="font-weight:600">G2 vs Vitality</td><td>G2 48%</td><td class="right price">$0.55</td><td class="right" style="color:var(--red)">-7%</td><td class="right">$180K</td><td><button class="btn btn-sm">分析</button></td></tr><tr><td>65</td><td style="font-weight:600">Cloud9 vs FURIA</td><td>C9 56%</td><td class="right price">$0.51</td><td class="right" style="color:var(--green)">+5%</td><td class="right">$156K</td><td><button class="btn btn-sm">分析</button></td></tr><tr><td>52</td><td style="font-weight:600">ENCE vs Astralis</td><td>ENCE 43%</td><td class="right price">$0.41</td><td class="right" style="color:var(--green)">+2%</td><td class="right">$95K</td><td><button class="btn btn-sm">分析</button></td></tr><tr><td>38</td><td style="font-weight:600">Heroic vs BIG</td><td>Heroic 55%</td><td class="right price">$0.57</td><td class="right" style="color:var(--red)">-2%</td><td class="right">$78K</td><td><button class="btn btn-sm">分析</button></td></tr></tbody></table></div><div class="grid-2"><div class="panel"><div class="panel-header"><span>High Deviation</span></div><div class="panel-body"><div style="display:flex;flex-direction:column;gap:10px;font-size:13px"><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><div><span style="font-weight:600">NaVi vs FaZe</span><span style="color:var(--muted-foreground);margin-left:10px">模型 71% vs 市场 62%</span></div><span class="badge badge-green">+9% BUY</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0"><div><span style="font-weight:600">Spirit vs MOUZ</span><span style="color:var(--muted-foreground);margin-left:10px">模型 57% vs 市场 48%</span></div><span class="badge badge-green">+9% BUY</span></div></div></div></div><div class="panel"><div class="panel-header"><span>Whale Activity</span></div><div class="panel-body"><div style="display:flex;flex-direction:column;gap:10px;font-size:13px"><div style="padding:6px 0;border-bottom:1px solid var(--border)"><div style="font-weight:600;margin-bottom:4px">Spirit vs MOUZ</div><div style="color:var(--muted-foreground);font-size:12px">3 个关联地址同时建仓，可疑度 82</div><div style="margin-top:4px"><span class="badge badge-red">HIGH</span></div></div><div style="padding:6px 0"><div style="font-weight:600;margin-bottom:4px">NaVi vs FaZe</div><div style="color:var(--muted-foreground);font-size:12px">2 个大户赛前买入 NaVi，总金额 $45K</div><div style="margin-top:4px"><span class="badge badge-yellow">WATCH</span></div></div></div></div></div></div>';
+}
+
+function renderMatch() {
+  return '<div style="display:flex;gap:8px;margin-bottom:8px"><button class="btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>BUY Yes</button><button class="btn btn-secondary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>SELL No</button><span style="font-size:13px;color:var(--muted-foreground);margin-left:12px">IEM Katowice 2025 · S-Tier · BO3 · Jun 18 18:00 CST</span></div>'+
+  // WIN RATE BAR + LLM CONSENSUS GAUGE
+  '<div class="grid-2">'+
+  '<div class="panel"><div class="panel-header"><span>Win Rate</span></div><div class="panel-body">'+
+  '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'+
+  '<div style="text-align:center;flex:1"><div style="font-size:20px;font-weight:700;color:var(--blue)">NaVi</div><div style="font-size:11px;color:var(--muted-foreground)">Rank #3</div></div>'+
+  '<div style="text-align:center"><div style="font-family:var(--font-mono);font-size:42px;font-weight:700;color:var(--blue);line-height:1">71%</div><div style="font-size:11px;color:var(--muted-foreground)">vs</div><div style="font-family:var(--font-mono);font-size:24px;font-weight:700;color:var(--red)">29%</div></div>'+
+  '<div style="text-align:center;flex:1"><div style="font-size:20px;font-weight:700;color:var(--red)">FaZe</div><div style="font-size:11px;color:var(--muted-foreground)">Rank #8</div></div></div>'+
+  '<div style="display:flex;height:32px;border-radius:16px;overflow:hidden;margin-bottom:8px">'+
+  '<div style="width:71%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font-mono);font-size:14px;font-weight:700">71%</div>'+
+  '<div style="width:29%;background:var(--red);display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font-mono);font-size:14px;font-weight:700">29%</div></div>'+
+  '<div style="text-align:center;font-size:12px;color:var(--muted-foreground)">模型预测 NaVi 胜率 71%，市场定价 62%（<span style="color:var(--green);font-weight:600">偏差 +9%</span>）</div>'+
+  '</div></div>'+
+  // LLM CONSENSUS GAUGE
+  '<div class="panel"><div class="panel-header"><span>LLM Consensus</span></div><div class="panel-body">'+
+  '<div style="display:flex;align-items:center;gap:20px">'+
+  '<div style="position:relative;width:120px;height:120px;flex-shrink:0">'+
+  '<svg viewBox="0 0 120 120" style="width:120px;height:120px;transform:rotate(-90deg)">'+
+  '<circle cx="60" cy="60" r="50" fill="none" stroke="var(--secondary)" stroke-width="8"/>'+
+  '<circle cx="60" cy="60" r="50" fill="none" stroke="var(--blue)" stroke-width="8" stroke-dasharray="314" stroke-dashoffset="91" stroke-linecap="round"/>'+
+  '<line x1="60" y1="60" x2="60" y2="18" stroke="var(--foreground)" stroke-width="2" transform="rotate(128,60,60)"/>'+
+  '<circle cx="60" cy="60" r="4" fill="var(--foreground)"/>'+
+  '</svg>'+
+  '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">'+
+  '<div style="font-family:var(--font-mono);font-size:24px;font-weight:700;color:var(--blue)">71%</div>'+
+  '<div style="font-size:10px;color:var(--muted-foreground)">4/4 agree</div></div></div>'+
+  '<div style="display:flex;flex-direction:column;gap:6px;flex:1">'+
+  '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;width:70px">GPT-4o</span><div class="progress" style="flex:1"><div class="progress-fill green" style="width:73%"></div></div><span class="mono" style="font-size:11px;color:var(--green)">73%</span></div>'+
+  '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;width:70px">Claude 3.5</span><div class="progress" style="flex:1"><div class="progress-fill green" style="width:70%"></div></div><span class="mono" style="font-size:11px;color:var(--green)">70%</span></div>'+
+  '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;width:70px">Gemini 2.0</span><div class="progress" style="flex:1"><div class="progress-fill green" style="width:68%"></div></div><span class="mono" style="font-size:11px;color:var(--green)">68%</span></div>'+
+  '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;width:70px">DeepSeek V3</span><div class="progress" style="flex:1"><div class="progress-fill green" style="width:72%"></div></div><span class="mono" style="font-size:11px;color:var(--green)">72%</span></div>'+
+  '</div></div></div></div></div>'+
+  // WIN RATE DONUT + TIMELINE
+  '<div class="grid-2">'+
+  '<div class="panel"><div class="panel-header"><span>Factor Breakdown</span></div><div class="panel-body">'+
+  '<div style="display:flex;align-items:center;gap:20px">'+
+  '<div style="position:relative;width:140px;height:140px;flex-shrink:0">'+
+  '<svg viewBox="0 0 140 140" style="width:140px;height:140px">'+
+  '<circle cx="70" cy="70" r="55" fill="none" stroke="var(--secondary)" stroke-width="12"/>'+
+  '<circle cx="70" cy="70" r="55" fill="none" stroke="var(--blue)" stroke-width="12" stroke-dasharray="86 259" stroke-dashoffset="0" stroke-linecap="butt" transform="rotate(-90,70,70)"/>'+
+  '<circle cx="70" cy="70" r="55" fill="none" stroke="#2563EB" stroke-width="12" stroke-dasharray="69 276" stroke-dashoffset="-86" stroke-linecap="butt" transform="rotate(-90,70,70)"/>'+
+  '<circle cx="70" cy="70" r="55" fill="none" stroke="#3B82F6" stroke-width="12" stroke-dasharray="69 276" stroke-dashoffset="-155" stroke-linecap="butt" transform="rotate(-90,70,70)"/>'+
+  '<circle cx="70" cy="70" r="55" fill="none" stroke="#60A5FA" stroke-width="12" stroke-dasharray="52 293" stroke-dashoffset="-224" stroke-linecap="butt" transform="rotate(-90,70,70)"/>'+
+  '<circle cx="70" cy="70" r="55" fill="none" stroke="#93C5FD" stroke-width="12" stroke-dasharray="69 276" stroke-dashoffset="-276" stroke-linecap="butt" transform="rotate(-90,70,70)"/>'+
+  '</svg>'+
+  '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">'+
+  '<div style="font-family:var(--font-mono);font-size:28px;font-weight:700;color:var(--blue)">71%</div>'+
+  '<div style="font-size:10px;color:var(--muted-foreground)">NaVi Win</div></div></div>'+
+  '<div style="display:flex;flex-direction:column;gap:8px;flex:1;font-size:11px">'+
+  '<div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:var(--blue);flex-shrink:0"></span><span>Rank (25%)</span><span class="mono" style="margin-left:auto;color:var(--blue)">62%</span></div>'+
+  '<div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#2563EB;flex-shrink:0"></span><span>Form (20%)</span><span class="mono" style="margin-left:auto;color:var(--green)">70%</span></div>'+
+  '<div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#3B82F6;flex-shrink:0"></span><span>Map (20%)</span><span class="mono" style="margin-left:auto;color:var(--green)">65%</span></div>'+
+  '<div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#60A5FA;flex-shrink:0"></span><span>H2H (15%)</span><span class="mono" style="margin-left:auto;color:var(--purple)">68%</span></div>'+
+  '<div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#93C5FD;flex-shrink:0"></span><span>Market (20%)</span><span class="mono" style="margin-left:auto;color:var(--orange)">60%</span></div>'+
+  '</div></div></div></div>'+
+  '<div class="panel"><div class="panel-header"><span>Win Rate Timeline (24h)</span></div><div class="panel-body"><div class="chart-area" style="height:140px">'+
+  '<svg class="chart-svg" viewBox="0 0 800 140" preserveAspectRatio="none"><defs><linearGradient id="wt" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--blue)" stop-opacity="0.1"/><stop offset="100%" stop-color="var(--blue)" stop-opacity="0"/></linearGradient></defs>'+
+  '<rect width="800" height="140" fill="transparent"/>'+
+  '<line x1="0" y1="70" x2="800" y2="70" stroke="var(--border)" stroke-width="0.5"/>'+
+  '<polyline fill="url(#wt)" stroke="var(--blue)" stroke-width="2" fill="none" points="0,90 50,88 100,85 150,82 200,80 250,78 300,75 350,73 400,72 450,70 500,68 550,65 600,62 650,60 700,58 750,56 800,54"/>'+
+  '<circle cx="400" cy="72" r="4" fill="var(--yellow)"/><text x="400" y="62" text-anchor="middle" fill="var(--yellow)" font-size="9" font-family="var(--font-mono)">阵容公布</text>'+
+  '<circle cx="650" cy="60" r="4" fill="var(--red)"/><text x="650" y="50" text-anchor="middle" fill="var(--red)" font-size="9" font-family="var(--font-mono)">巨鲸买入</text>'+
+  '</svg></div></div></div></div>'+
+  // PRICE CHART + ORDER BOOK
+  '<div class="grid-2"><div class="panel"><div class="panel-header"><span>Price Chart</span></div><div class="panel-body"><div class="chart-area" style="height:200px"><svg class="chart-svg" viewBox="0 0 800 200" preserveAspectRatio="none"><defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--blue)" stop-opacity="0.12"/><stop offset="100%" stop-color="var(--blue)" stop-opacity="0"/></linearGradient></defs><rect width="800" height="200" fill="transparent"/><line x1="0" y1="50" x2="800" y2="50" stroke="var(--border)" stroke-width="0.5"/><line x1="0" y1="100" x2="800" y2="100" stroke="var(--border)" stroke-width="0.5"/><line x1="0" y1="150" x2="800" y2="150" stroke="var(--border)" stroke-width="0.5"/><polyline fill="url(#ag)" stroke="var(--blue)" stroke-width="1.5" fill="none" points="0,130 50,125 100,115 150,110 200,105 250,100 300,95 350,92 400,100 450,96 500,88 550,85 600,82 650,78 700,84 750,80 800,76"/><circle cx="800" cy="76" r="4" fill="var(--blue)"/><text x="800" y="68" text-anchor="end" fill="var(--blue)" font-size="11" font-family="var(--font-mono)">$0.62</text></svg></div></div></div>'+
+  '<div class="panel"><div class="panel-header"><span>Order Book</span></div><div class="panel-body"><div style="display:flex;flex-direction:column;gap:4px;font-size:13px"><div style="display:flex;justify-content:space-between;color:var(--red)"><span>$0.65</span><span>12,500</span><span class="mono">$8,125</span></div><div style="display:flex;justify-content:space-between;color:var(--red)"><span>$0.64</span><span>8,200</span><span class="mono">$5,248</span></div><div style="display:flex;justify-content:space-between;color:var(--red)"><span>$0.63</span><span>15,000</span><span class="mono">$9,450</span></div><div style="height:1px;background:var(--border);margin:4px 0"></div><div style="text-align:center;font-family:var(--font-mono);font-weight:700;font-size:16px;padding:4px">$0.62</div><div style="height:1px;background:var(--border);margin:4px 0"></div><div style="display:flex;justify-content:space-between;color:var(--green)"><span>$0.61</span><span>10,000</span><span class="mono">$6,100</span></div><div style="display:flex;justify-content:space-between;color:var(--green)"><span>$0.60</span><span>18,500</span><span class="mono">$11,100</span></div><div style="display:flex;justify-content:space-between;color:var(--green)"><span>$0.59</span><span>22,000</span><span class="mono">$12,980</span></div></div></div></div></div>'+
+  // DECISION BAR
+  '<div style="display:flex;gap:8px;padding:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);align-items:center"><span style="font-size:13px;font-weight:600;margin-right:12px">Decision:</span><button class="btn">确认 LLM 共识 (71%)</button><button class="btn btn-secondary">调整预测</button><button class="btn btn-secondary">跳过</button></div>';
+}
+
+function renderWhales() {
+  return '<div class="filter-row" style="margin-bottom:12px"><span class="filter-pill active">All</span><span class="filter-pill">High >70</span><span class="filter-pill">Mid 40-70</span><span class="filter-pill">24h Active</span></div><div class="grid-2-1"><div class="panel"><div class="panel-header"><span>Whale Leaderboard</span></div><table class="data-table"><thead><tr><th>Address</th><th>Label</th><th class="right">Volume</th><th class="right">PnL</th><th class="right">Score</th><th>Pattern</th></tr></thead><tbody><tr><td style="font-family:var(--font-mono);font-size:13px">0x7a3f...8b2c</td><td><span class="badge badge-red">HIGH</span></td><td class="right">$245K</td><td class="right" style="color:var(--green)">+$32K</td><td class="right" style="color:var(--red);font-weight:600">82</td><td><span class="badge badge-red">Pre-match</span></td></tr><tr><td style="font-family:var(--font-mono);font-size:13px">0x2d9e...c1a4</td><td><span class="badge badge-yellow">WATCH</span></td><td class="right">$180K</td><td class="right" style="color:var(--red)">-$8K</td><td class="right" style="color:var(--orange);font-weight:600">65</td><td><span class="badge badge-yellow">Arbitrage</span></td></tr><tr><td style="font-family:var(--font-mono);font-size:13px">0x9b4f...e2d7</td><td><span class="badge badge-yellow">WATCH</span></td><td class="right">$156K</td><td class="right" style="color:var(--green)">+$18K</td><td class="right" style="color:var(--orange);font-weight:600">58</td><td><span class="badge badge-purple">Coordinated</span></td></tr><tr><td style="font-family:var(--font-mono);font-size:13px">0x4c1a...f3b8</td><td><span class="badge badge-cyan">OBSERVE</span></td><td class="right">$95K</td><td class="right" style="color:var(--green)">+$5K</td><td class="right">35</td><td><span class="badge badge-cyan">Normal</span></td></tr><tr><td style="font-family:var(--font-mono);font-size:13px">0x6e8d...a5c2</td><td><span class="badge badge-cyan">OBSERVE</span></td><td class="right">$78K</td><td class="right" style="color:var(--red)">-$3K</td><td class="right">28</td><td><span class="badge badge-cyan">Normal</span></td></tr></tbody></table></div><div style="display:flex;flex-direction:column;gap:16px"><div class="panel"><div class="panel-header"><span>Alerts <span class="badge badge-red" style="margin-left:6px">3</span></span></div><div style="display:flex;flex-direction:column"><div class="alert-item"><span class="alert-sev" style="background:var(--red)"></span><div class="alert-body"><div class="alert-title">Large abnormal buy</div><div class="alert-desc">0x7a3f bought $45K on NaVi market</div></div><span class="alert-time">2m ago</span></div><div class="alert-item"><span class="alert-sev" style="background:var(--yellow)"></span><div class="alert-body"><div class="alert-title">Coordinated trade detected</div><div class="alert-desc">3 linked addresses building Spirit position</div></div><span class="alert-time">15m ago</span></div><div class="alert-item"><span class="alert-sev" style="background:var(--cyan)"></span><div class="alert-body"><div class="alert-title">Price spike</div><div class="alert-desc">Spirit market +12% in 5 minutes</div></div><span class="alert-time">28m ago</span></div></div></div><div class="panel"><div class="panel-header"><span>0x7a3f...8b2c Score</span></div><div class="panel-body"><div class="ring-wrap"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--secondary)" stroke-width="5"/><circle cx="50" cy="50" r="40" fill="none" stroke="var(--red)" stroke-width="5" stroke-dasharray="251" stroke-dashoffset="45" stroke-linecap="round"/></svg><div class="ring-center"><div class="ring-score">82</div><div class="ring-label">Suspicious</div></div></div><div style="margin-top:12px;display:flex;flex-direction:column;gap:8px"><div><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>Timing (30%)</span><span class="mono" style="color:var(--red)">82</span></div><div class="progress"><div class="progress-fill red" style="width:82%"></div></div></div><div><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>Size (25%)</span><span class="mono" style="color:var(--purple)">68</span></div><div class="progress"><div class="progress-fill purple" style="width:68%"></div></div></div><div><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>Frequency (20%)</span><span class="mono" style="color:var(--orange)">55</span></div><div class="progress"><div class="progress-fill orange" style="width:55%"></div></div></div><div><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>Links (25%)</span><span class="mono" style="color:var(--blue)">91</span></div><div class="progress"><div class="progress-fill blue" style="width:91%"></div></div></div></div></div></div></div></div>';
+}
+
+function renderEsports() {
+  return '<div class="filter-row" style="margin-bottom:12px"><span class="filter-pill active">All</span><span class="filter-pill">S-Tier</span><span class="filter-pill">A-Tier</span><span class="filter-pill">Upcoming</span></div><div class="panel"><div class="panel-header"><span>NaVi vs FaZe — IEM Katowice 2025 <span class="badge badge-blue" style="margin-left:8px">S-TIER</span></span></div><div class="panel-body"><div class="grid-2"><div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="text-align:center"><div style="font-size:18px;font-weight:700">NaVi</div><div style="font-size:12px;color:var(--muted-foreground);margin-top:2px">Rank #3</div><div style="font-size:11px;color:var(--green);margin-top:4px">L10: 7W-3L</div></div><div style="font-size:20px;font-weight:700;color:var(--muted-foreground)">VS</div><div style="text-align:center"><div style="font-size:18px;font-weight:700">FaZe</div><div style="font-size:12px;color:var(--muted-foreground);margin-top:2px">Rank #8</div><div style="font-size:11px;color:var(--orange);margin-top:4px">L10: 5W-5L</div></div></div><div style="font-size:12px;color:var(--muted-foreground);margin-bottom:8px">2025-06-18 18:00 CST · BO3</div><div style="display:flex;gap:6px"><span class="badge badge-green">Model: NaVi 71%</span><span class="badge badge-blue">Market: 62%</span><span class="badge badge-green">+9%</span></div></div><div><div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:0.5px">Map Pool (BO3 Sim)</div><div class="map-bar"><div class="map-bar-head"><span class="map-name">Nuke</span><span class="map-pct">NaVi 75%</span></div><div class="map-bar-dual"><div class="map-bar-a" style="width:75%"></div><div class="map-bar-b" style="width:25%"></div></div></div><div class="map-bar"><div class="map-bar-head"><span class="map-name">Ancient</span><span class="map-pct">NaVi 70%</span></div><div class="map-bar-dual"><div class="map-bar-a" style="width:70%"></div><div class="map-bar-b" style="width:30%"></div></div></div><div class="map-bar"><div class="map-bar-head"><span class="map-name">Mirage</span><span class="map-pct">NaVi 65%</span></div><div class="map-bar-dual"><div class="map-bar-a" style="width:65%"></div><div class="map-bar-b" style="width:35%"></div></div></div><div class="map-bar"><div class="map-bar-head"><span class="map-name">Inferno</span><span class="map-pct">FaZe 68%</span></div><div class="map-bar-dual"><div class="map-bar-a" style="width:32%"></div><div class="map-bar-b" style="width:68%"></div></div></div><div class="map-bar"><div class="map-bar-head"><span class="map-name">Vertigo</span><span class="map-pct">FaZe 72%</span></div><div class="map-bar-dual"><div class="map-bar-a" style="width:28%"></div><div class="map-bar-b" style="width:72%"></div></div></div></div></div></div></div><div class="panel"><div class="panel-header"><span>HLTV World Ranking Top 10</span></div><table class="data-table"><thead><tr><th>#</th><th>Team</th><th>Points</th><th class="right">Win% (3mo)</th><th>Key Player</th><th class="right">Rating 2.0</th></tr></thead><tbody><tr><td>1</td><td style="font-weight:600">Vitality</td><td>1000</td><td class="right">82%</td><td>ZywOo</td><td class="right">1.32</td></tr><tr><td>2</td><td style="font-weight:600">Spirit</td><td>892</td><td class="right">78%</td><td>donk</td><td class="right">1.35</td></tr><tr><td>3</td><td style="font-weight:600">NaVi</td><td>845</td><td class="right">75%</td><td>b1t</td><td class="right">1.18</td></tr><tr><td>4</td><td style="font-weight:600">G2</td><td>798</td><td class="right">72%</td><td>m0NESY</td><td class="right">1.28</td></tr><tr><td>5</td><td style="font-weight:600">MOUZ</td><td>756</td><td class="right">70%</td><td>torzsi</td><td class="right">1.15</td></tr><tr><td>6</td><td style="font-weight:600">FaZe</td><td>712</td><td class="right">65%</td><td>ropz</td><td class="right">1.14</td></tr><tr><td>7</td><td style="font-weight:600">Cloud9</td><td>678</td><td class="right">68%</td><td>Ax1Le</td><td class="right">1.12</td></tr><tr><td>8</td><td style="font-weight:600">ENCE</td><td>634</td><td class="right">62%</td><td>dycha</td><td class="right">1.08</td></tr><tr><td>9</td><td style="font-weight:600">Heroic</td><td>598</td><td class="right">60%</td><td>stavn</td><td class="right">1.10</td></tr><tr><td>10</td><td style="font-weight:600">Astralis</td><td>562</td><td class="right">58%</td><td>device</td><td class="right">1.09</td></tr></tbody></table></div>';
+}
+
+function renderSignals() {
+  return '<div class="filter-row" style="margin-bottom:12px"><span class="filter-pill active">All</span><span class="filter-pill">Deviation >5%</span><span class="filter-pill">High Conf</span><span class="filter-pill">BUY</span><span class="filter-pill">SELL</span></div><div class="panel"><div class="panel-header"><span>Multi-Source Signal Comparison</span></div><div style="padding:8px 16px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:12px;font-size:11px;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:0.5px;font-weight:500"><span>Match</span><span style="text-align:center">Market</span><span style="text-align:center">Model</span><span style="text-align:center">Community</span><span style="text-align:center">Deviation</span></div><div class="signal-row"><div class="signal-match">NaVi vs FaZe</div><div class="signal-vals"><div class="signal-val market">62%</div><div class="signal-val model">71%</div><div class="signal-val community">65%</div></div><div class="signal-dev pos">+9% BUY</div></div><div class="signal-row"><div class="signal-match">Spirit vs MOUZ</div><div class="signal-vals"><div class="signal-val market">48%</div><div class="signal-val model">57%</div><div class="signal-val community">52%</div></div><div class="signal-dev pos">+9% BUY</div></div><div class="signal-row"><div class="signal-match">G2 vs Vitality</div><div class="signal-vals"><div class="signal-val market">55%</div><div class="signal-val model">48%</div><div class="signal-val community">50%</div></div><div class="signal-dev neg">-7% SELL</div></div><div class="signal-row"><div class="signal-match">Cloud9 vs FURIA</div><div class="signal-vals"><div class="signal-val market">51%</div><div class="signal-val model">56%</div><div class="signal-val community">53%</div></div><div class="signal-dev pos">+5% BUY</div></div><div class="signal-row"><div class="signal-match">ENCE vs Astralis</div><div class="signal-vals"><div class="signal-val market">41%</div><div class="signal-val model">43%</div><div class="signal-val community">44%</div></div><div class="signal-dev pos">+2% HOLD</div></div><div class="signal-row"><div class="signal-match">Heroic vs BIG</div><div class="signal-vals"><div class="signal-val market">57%</div><div class="signal-val model">55%</div><div class="signal-val community">56%</div></div><div class="signal-dev neg">-2% HOLD</div></div></div><div class="grid-2"><div class="panel"><div class="panel-header"><span>Signal Performance</span></div><div class="panel-body"><div style="display:flex;gap:24px;justify-content:space-around;text-align:center"><div><div style="font-size:11px;color:var(--muted-foreground)">Total</div><div style="font-family:var(--font-mono);font-size:24px;font-weight:700">156</div></div><div><div style="font-size:11px;color:var(--muted-foreground)">Accuracy</div><div style="font-family:var(--font-mono);font-size:24px;font-weight:700;color:var(--green)">68%</div></div><div><div style="font-size:11px;color:var(--muted-foreground)">Avg Dev</div><div style="font-family:var(--font-mono);font-size:24px;font-weight:700;color:var(--blue)">+4.2%</div></div><div><div style="font-size:11px;color:var(--muted-foreground)">Sharpe</div><div style="font-family:var(--font-mono);font-size:24px;font-weight:700;color:var(--green)">1.85</div></div></div></div></div><div class="panel"><div class="panel-header"><span>Deviation Distribution</span></div><div class="panel-body"><div style="display:flex;flex-direction:column;gap:10px"><div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>BUY (>5%)</span><span class="mono" style="color:var(--green)">12</span></div><div class="progress"><div class="progress-fill green" style="width:40%"></div></div></div><div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>SELL (<-5%)</span><span class="mono" style="color:var(--red)">8</span></div><div class="progress"><div class="progress-fill red" style="width:27%"></div></div></div><div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>HOLD</span><span class="mono" style="color:var(--yellow)">10</span></div><div class="progress"><div class="progress-fill orange" style="width:33%"></div></div></div></div></div></div></div>';
+}
+
+function renderAiConfig() {
+  return '<div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn btn-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>测试全部</button><button class="btn btn-secondary btn-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>导入 .env</button></div><div class="panel"><div class="panel-header"><span>API Key Management</span></div><table class="data-table"><thead><tr><th>Provider</th><th>Model</th><th>API Key</th><th>状态</th><th>延迟</th><th>操作</th></tr></thead><tbody><tr><td style="font-weight:600">OpenAI</td><td>GPT-4o</td><td style="font-family:var(--font-mono);font-size:12px">sk-p...****...b2c</td><td><span class="badge badge-green">&#10003; 已连接</span></td><td style="font-family:var(--font-mono)">245ms</td><td><button class="btn btn-sm">测试</button> <button class="btn btn-secondary btn-sm">编辑</button></td></tr><tr><td style="font-weight:600">Anthropic</td><td>Claude 3.5</td><td style="font-family:var(--font-mono);font-size:12px">sk-a...****...d4e</td><td><span class="badge badge-green">&#10003; 已连接</span></td><td style="font-family:var(--font-mono)">312ms</td><td><button class="btn btn-sm">测试</button> <button class="btn btn-secondary btn-sm">编辑</button></td></tr><tr><td style="font-weight:600">Google</td><td>Gemini 2.0</td><td style="font-family:var(--font-mono);font-size:12px">AIz...****...f8g</td><td><span class="badge badge-green">&#10003; 已连接</span></td><td style="font-family:var(--font-mono)">189ms</td><td><button class="btn btn-sm">测试</button> <button class="btn btn-secondary btn-sm">编辑</button></td></tr><tr><td style="font-weight:600">DeepSeek</td><td>V3</td><td style="font-family:var(--font-mono);font-size:12px">sk-d...****...h6j</td><td><span class="badge badge-green">&#10003; 已连接</span></td><td style="font-family:var(--font-mono)">520ms</td><td><button class="btn btn-sm">测试</button> <button class="btn btn-secondary btn-sm">编辑</button></td></tr><tr><td style="font-weight:600">xAI</td><td>Grok 2</td><td style="font-family:var(--font-mono);font-size:12px;color:var(--muted-foreground)">未配置</td><td><span class="badge badge-red">&#10007; 未连接</span></td><td style="font-family:var(--font-mono);color:var(--muted-foreground)">—</td><td><button class="btn btn-sm">配置</button></td></tr><tr><td style="font-weight:600">Groq</td><td>Llama 3.3</td><td style="font-family:var(--font-mono);font-size:12px;color:var(--muted-foreground)">未配置</td><td><span class="badge badge-red">&#10007; 未连接</span></td><td style="font-family:var(--font-mono);color:var(--muted-foreground)">—</td><td><button class="btn btn-sm">配置</button></td></tr></tbody></table></div><div class="panel" style="margin-top:16px"><div class="panel-header"><span>Quota & Usage — 2025-06</span></div><div class="panel-body"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px"><div class="factor-card"><div class="factor-head"><span class="factor-name">GPT-4o</span><span class="factor-wt" style="color:var(--green)">$14.50</span></div><div style="font-family:var(--font-mono);font-size:11px;color:var(--muted-foreground);margin-bottom:6px">1.2M tokens</div><div class="progress"><div class="progress-fill blue" style="width:40%"></div></div></div><div class="factor-card"><div class="factor-head"><span class="factor-name">Claude 3.5</span><span class="factor-wt" style="color:var(--green)">$14.40</span></div><div style="font-family:var(--font-mono);font-size:11px;color:var(--muted-foreground);margin-bottom:6px">0.8M tokens</div><div class="progress"><div class="progress-fill purple" style="width:30%"></div></div></div><div class="factor-card"><div class="factor-head"><span class="factor-name">Gemini 2.0</span><span class="factor-wt" style="color:var(--green)">$1.25</span></div><div style="font-family:var(--font-mono);font-size:11px;color:var(--muted-foreground);margin-bottom:6px">2.5M tokens</div><div class="progress"><div class="progress-fill green" style="width:60%"></div></div></div><div class="factor-card"><div class="factor-head"><span class="factor-name">DeepSeek V3</span><span class="factor-wt" style="color:var(--green)">$2.06</span></div><div style="font-family:var(--font-mono);font-size:11px;color:var(--muted-foreground);margin-bottom:6px">1.5M tokens</div><div class="progress"><div class="progress-fill orange" style="width:45%"></div></div></div></div><div class="stat-row" style="grid-template-columns:repeat(3,1fr)"><div class="stat-box"><div class="stat-label">本月总费用</div><div class="stat-value">$32.21</div></div><div class="stat-box"><div class="stat-label">日均费用</div><div class="stat-value">$1.07</div></div><div class="stat-box"><div class="stat-label">预估月费</div><div class="stat-value" style="color:var(--yellow)">$33.17</div></div></div></div></div><div class="panel" style="margin-top:16px"><div class="panel-header"><span>Connectivity Log</span></div><table class="data-table"><thead><tr><th>时间</th><th>Provider</th><th>状态</th><th class="right">延迟</th><th>详情</th></tr></thead><tbody><tr><td style="font-family:var(--font-mono);font-size:11px">10:32:15</td><td>GPT-4o</td><td><span class="badge badge-green">&#10003;</span></td><td class="right" style="font-family:var(--font-mono)">245ms</td><td style="font-size:11px;color:var(--muted-foreground)">Model gpt-4o available</td></tr><tr><td style="font-family:var(--font-mono);font-size:11px">10:32:12</td><td>Claude 3.5</td><td><span class="badge badge-green">&#10003;</span></td><td class="right" style="font-family:var(--font-mono)">312ms</td><td style="font-size:11px;color:var(--muted-foreground)">Model claude-3-5-sonnet available</td></tr><tr><td style="font-family:var(--font-mono);font-size:11px">10:32:08</td><td>Gemini 2.0</td><td><span class="badge badge-green">&#10003;</span></td><td class="right" style="font-family:var(--font-mono)">189ms</td><td style="font-size:11px;color:var(--muted-foreground)">Model gemini-2.0-flash available</td></tr><tr><td style="font-family:var(--font-mono);font-size:11px">10:32:05</td><td>DeepSeek V3</td><td><span class="badge badge-green">&#10003;</span></td><td class="right" style="font-family:var(--font-mono)">520ms</td><td style="font-size:11px;color:var(--muted-foreground)">Model deepseek-chat available</td></tr><tr><td style="font-family:var(--font-mono);font-size:11px">10:32:01</td><td>Grok 2</td><td><span class="badge badge-red">&#10007;</span></td><td class="right" style="font-family:var(--font-mono);color:var(--muted-foreground)">—</td><td style="font-size:11px;color:var(--red)">No API key configured</td></tr></tbody></table></div>';
+}
+
+function renderAiStats() {
+  return '<div class="tabs" id="aiTabs"><span class="tab-item active" onclick="switchAiTab(\'leaderboard\',event)">排行榜</span><span class="tab-item" onclick="switchAiTab(\'history\',event)">投注历史</span><span class="tab-item" onclick="switchAiTab(\'performance\',event)">用户表现</span><span class="tab-item" onclick="switchAiTab(\'calibration\',event)">置信度校准</span><span class="tab-item" onclick="switchAiTab(\'allocation\',event)">资金分配</span><span class="tab-item" onclick="switchAiTab(\'analysis\',event)">LLM 胜率</span></div><div id="aiTabContent"></div>';
+}
+
+function switchAiTab(name, e) {
+  document.querySelectorAll('#aiTabs .tab-item').forEach(t => t.classList.remove('active'));
+  if (e && e.target) e.target.classList.add('active');
+  const content = {
+    leaderboard: '<div class="panel"><div class="panel-header"><span>LLM Betting Leaderboard</span></div><table class="data-table"><thead><tr><th>#</th><th>LLM</th><th class="right">预测次数</th><th class="right">准确率</th><th class="right">模拟ROI</th><th class="right">夏普比率</th><th class="right">最大回撤</th><th>趋势</th></tr></thead><tbody><tr><td>1</td><td style="font-weight:600">GPT-4o</td><td class="right">45</td><td class="right" style="color:var(--green)">71.1%</td><td class="right" style="color:var(--green)">+18.5%</td><td class="right">2.1</td><td class="right" style="color:var(--red)">-8.2%</td><td style="color:var(--green)">&#8593;</td></tr><tr><td>2</td><td style="font-weight:600">Claude 3.5</td><td class="right">42</td><td class="right" style="color:var(--green)">69.0%</td><td class="right" style="color:var(--green)">+15.2%</td><td class="right">1.9</td><td class="right" style="color:var(--red)">-10.5%</td><td style="color:var(--green)">&#8593;</td></tr><tr><td>3</td><td style="font-weight:600">Gemini 2.0</td><td class="right">38</td><td class="right">65.8%</td><td class="right" style="color:var(--green)">+11.3%</td><td class="right">1.5</td><td class="right" style="color:var(--red)">-14.1%</td><td style="color:var(--yellow)">&#8594;</td></tr><tr><td>4</td><td style="font-weight:600">DeepSeek V3</td><td class="right">40</td><td class="right">62.5%</td><td class="right" style="color:var(--green)">+8.7%</td><td class="right">1.2</td><td class="right" style="color:var(--red)">-18.3%</td><td style="color:var(--red)">&#8595;</td></tr></tbody></table></div>',
+    history: '<div class="panel"><div class="panel-header"><span>Betting History</span></div><table class="data-table"><thead><tr><th>日期</th><th>比赛</th><th>LLM共识</th><th>用户决策</th><th class="right">投注</th><th>结果</th><th class="right">盈亏</th></tr></thead><tbody><tr><td>06-15</td><td style="font-weight:600">NaVi vs FaZe</td><td>NaVi 71%</td><td>确认</td><td class="right">BUY $100</td><td style="color:var(--green)">&#10003;</td><td class="right" style="color:var(--green)">+$61</td></tr><tr><td>06-14</td><td style="font-weight:600">G2 vs Vitality</td><td>G2 48%</td><td>调整 55%</td><td class="right">BUY $100</td><td style="color:var(--red)">&#10007;</td><td class="right" style="color:var(--red)">-$100</td></tr><tr><td>06-14</td><td style="font-weight:600">Spirit vs MOUZ</td><td>Spirit 57%</td><td>跳过</td><td class="right">—</td><td style="color:var(--green)">&#10003;</td><td class="right">—</td></tr><tr><td>06-13</td><td style="font-weight:600">ENCE vs Astralis</td><td>ENCE 43%</td><td>确认</td><td class="right">SELL $100</td><td style="color:var(--green)">&#10003;</td><td class="right" style="color:var(--green)">+$143</td></tr><tr><td>06-12</td><td style="font-weight:600">Cloud9 vs FURIA</td><td>C9 56%</td><td>确认</td><td class="right">BUY $100</td><td style="color:var(--red)">&#10007;</td><td class="right" style="color:var(--red)">-$100</td></tr></tbody></table></div>',
+    performance: '<div class="panel"><div class="panel-header"><span>Your Performance</span></div><div class="panel-body"><div class="stat-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px"><div class="stat-box"><div class="stat-label">总预测</div><div class="stat-value">32</div></div><div class="stat-box"><div class="stat-label">准确率</div><div class="stat-value" style="color:var(--green)">68.8%</div></div><div class="stat-box"><div class="stat-label">总盈亏</div><div class="stat-value" style="color:var(--green)">+$1,245</div></div></div><div class="stat-row" style="grid-template-columns:repeat(3,1fr)"><div class="stat-box"><div class="stat-label">夏普比率</div><div class="stat-value">1.85</div></div><div class="stat-box"><div class="stat-label">最大回撤</div><div class="stat-value" style="color:var(--red)">-12.3%</div></div><div class="stat-box"><div class="stat-label">vs LLM共识</div><div class="stat-value" style="color:var(--green)">+2.1%</div></div></div></div></div>',
+    calibration: '<div class="panel"><div class="panel-header"><span>Calibration Curve — GPT-4o</span></div><div class="panel-body"><div style="display:flex;flex-direction:column;gap:10px;font-size:13px"><div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>50-60%</span><span class="mono" style="color:var(--muted-foreground)">预测 55% / 实际 55% / n=8</span></div><div class="progress"><div class="progress-fill blue" style="width:55%"></div></div></div><div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>60-70%</span><span class="mono" style="color:var(--muted-foreground)">预测 65% / 实际 68% / n=15</span></div><div class="progress"><div class="progress-fill green" style="width:68%"></div></div></div><div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>70-80%</span><span class="mono" style="color:var(--muted-foreground)">预测 75% / 实际 78% / n=12</span></div><div class="progress"><div class="progress-fill green" style="width:78%"></div></div></div><div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>80-90%</span><span class="mono" style="color:var(--muted-foreground)">预测 85% / 实际 85% / n=7</span></div><div class="progress"><div class="progress-fill green" style="width:85%"></div></div></div><div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>90-100%</span><span class="mono" style="color:var(--muted-foreground)">预测 93% / 实际 92% / n=3</span></div><div class="progress"><div class="progress-fill green" style="width:92%"></div></div></div></div><div style="margin-top:12px;font-size:13px;color:var(--muted-foreground)">校准误差: <span style="color:var(--green);font-weight:600">3.2%</span> (优秀)</div></div></div>',
+    allocation: '<div style="display:flex;gap:12px;margin-bottom:12px;align-items:center"><span style="font-size:13px;font-weight:600">资金池:</span><input style="width:120px;padding:6px 10px;font-family:var(--font-mono);font-size:14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);color:var(--foreground)" value="$1,000"><span style="font-size:13px;font-weight:600;margin-left:16px">风险偏好:</span><span class="filter-pill active">均衡</span><span class="filter-pill">保守</span><span class="filter-pill">激进</span></div><div class="panel" style="margin-bottom:16px"><div class="panel-header"><span>LLM Prediction Matrix — NaVi vs FaZe</span></div><table class="data-table"><thead><tr><th>LLM</th><th class="right">预测胜率</th><th class="right">历史准确率</th><th class="right">隐含优势</th><th class="right">Kelly 比例</th><th class="right">建议金额</th><th>方向</th></tr></thead><tbody><tr><td style="font-weight:600">GPT-4o</td><td class="right" style="color:var(--green)">73%</td><td class="right">71.1%</td><td class="right" style="color:var(--green)">+11%</td><td class="right" style="font-family:var(--font-mono)">28.9%</td><td class="right" style="font-weight:600;color:var(--green)">$289</td><td><span class="badge badge-green">BUY</span></td></tr><tr><td style="font-weight:600">Claude 3.5</td><td class="right" style="color:var(--green)">70%</td><td class="right">69.0%</td><td class="right" style="color:var(--green)">+8%</td><td class="right" style="font-family:var(--font-mono)">21.1%</td><td class="right" style="font-weight:600;color:var(--green)">$211</td><td><span class="badge badge-green">BUY</span></td></tr><tr><td style="font-weight:600">Gemini 2.0</td><td class="right" style="color:var(--green)">68%</td><td class="right">65.8%</td><td class="right" style="color:var(--green)">+6%</td><td class="right" style="font-family:var(--font-mono)">15.8%</td><td class="right" style="font-weight:600;color:var(--green)">$158</td><td><span class="badge badge-green">BUY</span></td></tr><tr><td style="font-weight:600">DeepSeek V3</td><td class="right" style="color:var(--green)">72%</td><td class="right">62.5%</td><td class="right" style="color:var(--green)">+10%</td><td class="right" style="font-family:var(--font-mono)">26.3%</td><td class="right" style="font-weight:600;color:var(--green)">$263</td><td><span class="badge badge-green">BUY</span></td></tr></tbody></table></div><div class="grid-2"><div class="panel"><div class="panel-header"><span>Recommended Allocation</span></div><div class="panel-body"><div style="text-align:center;margin-bottom:16px"><div style="font-size:11px;color:var(--muted-foreground);margin-bottom:4px">推荐方向</div><div style="font-family:var(--font-mono);font-size:36px;font-weight:700;color:var(--green)">BUY NaVi</div><div style="font-size:13px;color:var(--muted-foreground);margin-top:4px">4/4 LLM 一致看多</div></div><div class="stat-row" style="grid-template-columns:repeat(3,1fr)"><div class="stat-box"><div class="stat-label">建议金额</div><div class="stat-value" style="color:var(--green)">$921</div></div><div class="stat-box"><div class="stat-label">预期收益</div><div class="stat-value" style="color:var(--green)">+$565</div></div><div class="stat-box"><div class="stat-label">最大回撤</div><div class="stat-value" style="color:var(--red)">-$285</div></div></div><div style="margin-top:12px;font-size:11px;color:var(--muted-foreground)">Kelly 加权分配 · 风险偏好: 均衡 · 置信度 92%</div></div></div><div class="panel"><div class="panel-header"><span>Risk-Reward Scatter</span></div><div class="panel-body"><div class="chart-area" style="height:180px"><svg class="chart-svg" viewBox="0 0 400 180" preserveAspectRatio="none"><rect width="400" height="180" fill="transparent"/><line x1="40" y1="140" x2="380" y2="140" stroke="var(--border)" stroke-width="0.5"/><line x1="40" y1="140" x2="40" y2="10" stroke="var(--border)" stroke-width="0.5"/><text x="200" y="170" text-anchor="middle" fill="var(--muted-foreground)" font-size="9">Risk (StdDev)</text><text x="12" y="80" text-anchor="middle" fill="var(--muted-foreground)" font-size="9" transform="rotate(-90,12,80)">Return</text><circle cx="120" cy="60" r="10" fill="var(--green)" opacity="0.8"/><text x="120" y="48" text-anchor="middle" fill="var(--green)" font-size="9" font-family="var(--font-mono)">GPT-4o</text><circle cx="160" cy="80" r="9" fill="var(--green)" opacity="0.8"/><text x="160" y="68" text-anchor="middle" fill="var(--green)" font-size="9" font-family="var(--font-mono)">Claude</text><circle cx="200" cy="95" r="8" fill="var(--green)" opacity="0.8"/><text x="200" y="83" text-anchor="middle" fill="var(--green)" font-size="9" font-family="var(--font-mono)">Gemini</text><circle cx="140" cy="70" r="9" fill="var(--green)" opacity="0.8"/><text x="140" y="58" text-anchor="middle" fill="var(--green)" font-size="9" font-family="var(--font-mono)">DeepSeek</text><circle cx="150" cy="75" r="14" fill="none" stroke="var(--blue)" stroke-width="1.5" stroke-dasharray="3,3"/><text x="150" y="50" text-anchor="middle" fill="var(--blue)" font-size="9" font-family="var(--font-mono)">Optimal</text></svg></div></div></div></div><div class="panel"><div class="panel-header"><span>Monte Carlo Simulation (1,000 runs)</span></div><div class="panel-body"><div class="chart-area" style="height:120px"><svg class="chart-svg" viewBox="0 0 800 120" preserveAspectRatio="none"><rect width="800" height="120" fill="transparent"/><line x1="0" y1="100" x2="800" y2="100" stroke="var(--border)" stroke-width="0.5"/><rect x="200" y="80" width="20" height="20" fill="var(--secondary)" rx="2"/><rect x="220" y="70" width="20" height="30" fill="var(--secondary)" rx="2"/><rect x="240" y="60" width="20" height="40" fill="var(--secondary)" rx="2"/><rect x="260" y="50" width="20" height="50" fill="var(--secondary)" rx="2"/><rect x="280" y="40" width="20" height="60" fill="var(--secondary)" rx="2"/><rect x="300" y="30" width="20" height="70" fill="var(--green)" opacity="0.3" rx="2"/><rect x="320" y="25" width="20" height="75" fill="var(--green)" opacity="0.3" rx="2"/><rect x="340" y="20" width="20" height="80" fill="var(--green)" opacity="0.3" rx="2"/><rect x="360" y="18" width="20" height="82" fill="var(--green)" opacity="0.4" rx="2"/><rect x="380" y="15" width="20" height="85" fill="var(--green)" opacity="0.4" rx="2"/><rect x="400" y="12" width="20" height="88" fill="var(--green)" opacity="0.5" rx="2"/><rect x="420" y="10" width="20" height="90" fill="var(--green)" opacity="0.5" rx="2"/><rect x="440" y="12" width="20" height="88" fill="var(--green)" opacity="0.5" rx="2"/><rect x="460" y="15" width="20" height="85" fill="var(--green)" opacity="0.4" rx="2"/><rect x="480" y="20" width="20" height="80" fill="var(--green)" opacity="0.3" rx="2"/><rect x="500" y="25" width="20" height="75" fill="var(--green)" opacity="0.3" rx="2"/><rect x="520" y="30" width="20" height="70" fill="var(--green)" opacity="0.3" rx="2"/><rect x="540" y="40" width="20" height="60" fill="var(--secondary)" rx="2"/><rect x="560" y="50" width="20" height="50" fill="var(--secondary)" rx="2"/><rect x="580" y="60" width="20" height="40" fill="var(--secondary)" rx="2"/><rect x="600" y="70" width="20" height="30" fill="var(--secondary)" rx="2"/><rect x="620" y="80" width="20" height="20" fill="var(--secondary)" rx="2"/><line x1="400" y1="5" x2="400" y2="100" stroke="var(--blue)" stroke-width="1" stroke-dasharray="4,2"/><text x="400" y="4" text-anchor="middle" fill="var(--blue)" font-size="9" font-family="var(--font-mono)">Mean: +$565</text></svg></div><div style="display:flex;justify-content:space-around;margin-top:8px;font-size:11px"><span>95% VaR: <span style="color:var(--red);font-family:var(--font-mono)">-$285</span></span><span>中位数: <span style="color:var(--green);font-family:var(--font-mono)">+$580</span></span><span>胜率: <span style="color:var(--green);font-family:var(--font-mono)">78.5%</span></span></div></div></div>',
+    config: '<div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn btn-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>测试全部</button><button class="btn btn-secondary btn-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>导入 .env</button></div><div class="panel"><div class="panel-header"><span>API Key Management</span></div><table class="data-table"><thead><tr><th>Provider</th><th>Model</th><th>API Key</th><th>状态</th><th>延迟</th><th>操作</th></tr></thead><tbody><tr><td style="font-weight:600">OpenAI</td><td>GPT-4o</td><td style="font-family:var(--font-mono);font-size:12px">sk-p...****...b2c</td><td><span class="badge badge-green">&#10003; 已连接</span></td><td style="font-family:var(--font-mono)">245ms</td><td><button class="btn btn-sm">测试</button> <button class="btn btn-secondary btn-sm">编辑</button></td></tr><tr><td style="font-weight:600">Anthropic</td><td>Claude 3.5</td><td style="font-family:var(--font-mono);font-size:12px">sk-a...****...d4e</td><td><span class="badge badge-green">&#10003; 已连接</span></td><td style="font-family:var(--font-mono)">312ms</td><td><button class="btn btn-sm">测试</button> <button class="btn btn-secondary btn-sm">编辑</button></td></tr><tr><td style="font-weight:600">Google</td><td>Gemini 2.0</td><td style="font-family:var(--font-mono);font-size:12px">AIz...****...f8g</td><td><span class="badge badge-green">&#10003; 已连接</span></td><td style="font-family:var(--font-mono)">189ms</td><td><button class="btn btn-sm">测试</button> <button class="btn btn-secondary btn-sm">编辑</button></td></tr><tr><td style="font-weight:600">DeepSeek</td><td>V3</td><td style="font-family:var(--font-mono);font-size:12px">sk-d...****...h6j</td><td><span class="badge badge-green">&#10003; 已连接</span></td><td style="font-family:var(--font-mono)">520ms</td><td><button class="btn btn-sm">测试</button> <button class="btn btn-secondary btn-sm">编辑</button></td></tr><tr><td style="font-weight:600">xAI</td><td>Grok 2</td><td style="font-family:var(--font-mono);font-size:12px;color:var(--muted-foreground)">未配置</td><td><span class="badge badge-red">&#10007; 未连接</span></td><td style="font-family:var(--font-mono);color:var(--muted-foreground)">—</td><td><button class="btn btn-sm">配置</button></td></tr><tr><td style="font-weight:600">Groq</td><td>Llama 3.3</td><td style="font-family:var(--font-mono);font-size:12px;color:var(--muted-foreground)">未配置</td><td><span class="badge badge-red">&#10007; 未连接</span></td><td style="font-family:var(--font-mono);color:var(--muted-foreground)">—</td><td><button class="btn btn-sm">配置</button></td></tr></tbody></table></div><div class="panel" style="margin-top:16px"><div class="panel-header"><span>Quota & Usage — 2025-06</span></div><div class="panel-body"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px"><div class="factor-card"><div class="factor-head"><span class="factor-name">GPT-4o</span><span class="factor-wt" style="color:var(--green)">$14.50</span></div><div style="font-family:var(--font-mono);font-size:11px;color:var(--muted-foreground);margin-bottom:6px">1.2M tokens</div><div class="progress"><div class="progress-fill blue" style="width:40%"></div></div></div><div class="factor-card"><div class="factor-head"><span class="factor-name">Claude 3.5</span><span class="factor-wt" style="color:var(--green)">$14.40</span></div><div style="font-family:var(--font-mono);font-size:11px;color:var(--muted-foreground);margin-bottom:6px">0.8M tokens</div><div class="progress"><div class="progress-fill purple" style="width:30%"></div></div></div><div class="factor-card"><div class="factor-head"><span class="factor-name">Gemini 2.0</span><span class="factor-wt" style="color:var(--green)">$1.25</span></div><div style="font-family:var(--font-mono);font-size:11px;color:var(--muted-foreground);margin-bottom:6px">2.5M tokens</div><div class="progress"><div class="progress-fill green" style="width:60%"></div></div></div><div class="factor-card"><div class="factor-head"><span class="factor-name">DeepSeek V3</span><span class="factor-wt" style="color:var(--green)">$2.06</span></div><div style="font-family:var(--font-mono);font-size:11px;color:var(--muted-foreground);margin-bottom:6px">1.5M tokens</div><div class="progress"><div class="progress-fill orange" style="width:45%"></div></div></div></div><div class="stat-row" style="grid-template-columns:repeat(3,1fr)"><div class="stat-box"><div class="stat-label">本月总费用</div><div class="stat-value">$32.21</div></div><div class="stat-box"><div class="stat-label">日均费用</div><div class="stat-value">$1.07</div></div><div class="stat-box"><div class="stat-label">预估月费</div><div class="stat-value" style="color:var(--yellow)">$33.17</div></div></div></div></div>',
+    analysis: '<div style="display:flex;gap:6px;margin-bottom:12px"><span class="filter-pill active">30天</span><span class="filter-pill">90天</span><span class="filter-pill">全部</span></div><div class="stat-row"><div class="stat-box"><div class="stat-label">准确率</div><div class="stat-value" style="color:var(--green)">71.1%</div><div class="stat-sub up">45 次预测</div></div><div class="stat-box"><div class="stat-label">模拟 ROI</div><div class="stat-value" style="color:var(--green)">+18.5%</div><div class="stat-sub up">+$832</div></div><div class="stat-box"><div class="stat-label">夏普比率</div><div class="stat-value">2.1</div><div class="stat-sub up">优秀</div></div><div class="stat-box"><div class="stat-label">最大回撤</div><div class="stat-value" style="color:var(--red)">-8.2%</div><div class="stat-sub down">可控</div></div></div><div class="grid-2"><div class="panel"><div class="panel-header"><span>By Tournament Tier</span></div><div class="panel-body"><div style="display:flex;flex-direction:column;gap:10px"><div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>S-Tier</span><span class="mono" style="color:var(--green)">73.2% (n=28)</span></div><div class="progress"><div class="progress-fill green" style="width:73.2%"></div></div></div><div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>A-Tier</span><span class="mono" style="color:var(--orange)">67.8% (n=17)</span></div><div class="progress"><div class="progress-fill orange" style="width:67.8%"></div></div></div></div></div></div><div class="panel"><div class="panel-header"><span>By Direction</span></div><div class="panel-body"><div style="display:flex;flex-direction:column;gap:10px"><div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>BUY</span><span class="mono" style="color:var(--green)">74.1% (n=27)</span></div><div class="progress"><div class="progress-fill green" style="width:74.1%"></div></div></div><div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>SELL</span><span class="mono" style="color:var(--red)">66.7% (n=18)</span></div><div class="progress"><div class="progress-fill red" style="width:66.7%"></div></div></div></div></div></div></div><div class="grid-2"><div class="panel"><div class="panel-header"><span>By Team</span></div><table class="data-table"><thead><tr><th>Team</th><th class="right">Predictions</th><th class="right">Accuracy</th></tr></thead><tbody><tr><td style="font-weight:600">NaVi</td><td class="right">12</td><td class="right" style="color:var(--green)">83.3%</td></tr><tr><td style="font-weight:600">FaZe</td><td class="right">12</td><td class="right" style="color:var(--green)">75.0%</td></tr><tr><td style="font-weight:600">G2</td><td class="right">12</td><td class="right" style="color:var(--orange)">66.7%</td></tr><tr><td style="font-weight:600">Vitality</td><td class="right">8</td><td class="right" style="color:var(--red)">62.5%</td></tr><tr><td style="font-weight:600">Spirit</td><td class="right">10</td><td class="right" style="color:var(--green)">70.0%</td></tr></tbody></table></div><div class="panel"><div class="panel-header"><span>By Map</span></div><table class="data-table"><thead><tr><th>Map</th><th class="right">Predictions</th><th class="right">Accuracy</th></tr></thead><tbody><tr><td style="font-weight:600">Nuke</td><td class="right">15</td><td class="right" style="color:var(--green)">80.0%</td></tr><tr><td style="font-weight:600">Mirage</td><td class="right">18</td><td class="right" style="color:var(--green)">72.2%</td></tr><tr><td style="font-weight:600">Ancient</td><td class="right">12</td><td class="right" style="color:var(--orange)">66.7%</td></tr><tr><td style="font-weight:600">Inferno</td><td class="right">14</td><td class="right" style="color:var(--green)">71.4%</td></tr><tr><td style="font-weight:600">Vertigo</td><td class="right">8</td><td class="right" style="color:var(--red)">62.5%</td></tr></tbody></table></div></div><div class="panel"><div class="panel-header"><span>Accuracy Trend (30 Days)</span></div><div class="panel-body"><div class="chart-area" style="height:140px"><svg class="chart-svg" viewBox="0 0 800 140" preserveAspectRatio="none"><defs><linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--green)" stop-opacity="0.1"/><stop offset="100%" stop-color="var(--green)" stop-opacity="0"/></linearGradient></defs><rect width="800" height="140" fill="transparent"/><line x1="0" y1="70" x2="800" y2="70" stroke="var(--border)" stroke-width="0.5"/><polyline fill="url(#tg)" stroke="var(--green)" stroke-width="1.5" fill="none" points="0,65 30,62 60,60 90,58 120,55 150,58 180,54 210,52 240,50 270,48 300,52 330,50 360,48 390,45 420,48 450,46 480,44 510,42 540,45 570,43 600,41 630,44 660,42 690,40 720,43 750,41 780,39 800,38"/></svg></div></div></div>',
+  };
+  document.getElementById('aiTabContent').innerHTML = content[name] || '';
+}
+
+renderPage();
+</script>
+</body>
+</html>

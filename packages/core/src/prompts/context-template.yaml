@@ -1,0 +1,58 @@
+# Context Template — Match data injection structure
+# Placeholders use {{variable}} syntax, rendered by PromptEngine
+
+sections:
+  match_info:
+    header: "## Match Information"
+    fields:
+      - label: "Event"
+        template: "{{eventName}} ({{eventType}})"
+      - label: "Format"
+        template: "{{format}}"
+      - label: "Scheduled"
+        template: "{{scheduledAt}}"
+      - label: "Maps"
+        template: "{{mapsList}}"
+
+  team:
+    header_prefix: "## Team"
+    fields:
+      - label: "HLTV Rank"
+        template: "#{{rank}}"
+      - label: "Region"
+        template: "{{region}}"
+      - label: "Recent Form (Last 10)"
+        template: "{{winRatePct}}% win rate"
+      - label: "Streak"
+        template: "{{streakDisplay}}"
+      - label: "Avg Rating"
+        template: "{{avgRating}}"
+    sub_sections:
+      map_pool:
+        header: "Map Pool"
+        item_template: "  - {{mapName}}: {{winRatePct}}% ({{matchesPlayed}} matches)"
+      key_players:
+        header: "Key Players"
+        item_template: "  - {{nickname}} ({{role}}): {{rating}} rating"
+
+  lineup:
+    header_prefix: "### {{teamLabel}} Starting Lineup"
+    warnings:
+      unconfirmed: "⚠️ LINEUP NOT CONFIRMED — may change before match"
+      standin: "⚠️ HAS STANDIN(S) — {{standinCount}} substitute player(s)"
+      missing_key: "⚠️ MISSING KEY PLAYERS: {{missingPlayers}}"
+    table_header: "| Player | Role | Rating | Impact | Standin | Maps w/ Team |"
+    table_separator: "|--------|------|--------|--------|---------|-------------|"
+    row_template: "| {{nickname}} | {{role}} | {{rating}} | {{impactScore}} | {{standinMark}} | {{mapsOnRecord}} |"
+
+  head_to_head:
+    header: "## Head-to-Head"
+    found_template: "{{teamAName}} leads {{wins}}-{{losses}} in {{matchesPlayed}} matches.\nLast match: {{lastMatch}}"
+    not_found: "No previous matchups found."
+
+  market_odds:
+    header: "## Market Odds"
+    template: "Polymarket implied probability: Team A {{probAPct}}% / Team B {{probBPct}}%"
+
+  closing:
+    template: "Please analyze this match and provide your win probability prediction."

@@ -1,0 +1,211 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   shadcn/ui Design Tokens — Dark+ Theme (default)
+   ============================================================ */
+:root,
+.theme-dark {
+  --background: #0A0A0A;
+  --foreground: #FAFAFA;
+  --card: #18181B;
+  --card-foreground: #FAFAFA;
+  --popover: #18181B;
+  --popover-foreground: #FAFAFA;
+  --primary: #3B82F6;
+  --primary-foreground: #FFFFFF;
+  --secondary: #27272A;
+  --secondary-foreground: #FAFAFA;
+  --muted: #27272A;
+  --muted-foreground: #A1A1AA;
+  --accent: #27272A;
+  --accent-foreground: #FAFAFA;
+  --destructive: #EF4444;
+  --destructive-foreground: #FAFAFA;
+  --border: #27272A;
+  --input: #27272A;
+  --ring: #3B82F6;
+  --radius: 0.5rem;
+
+  /* Sidebar */
+  --sidebar: #0A0A0A;
+  --sidebar-foreground: #A1A1AA;
+  --sidebar-hover: #18181B;
+  --sidebar-active: #27272A;
+
+  /* Status Bar */
+  --status-bar: #18181B;
+  --status-bar-foreground: #A1A1AA;
+
+  /* Functional Colors */
+  --green: #22C55E;
+  --red: #EF4444;
+  --yellow: #EAB308;
+  --orange: #F97316;
+  --purple: #A855F7;
+  --cyan: #06B6D4;
+  --blue: #3B82F6;
+}
+
+/* ============================================================
+   Light+ Theme
+   ============================================================ */
+.theme-light {
+  --background: #FFFFFF;
+  --foreground: #09090B;
+  --card: #FFFFFF;
+  --card-foreground: #09090B;
+  --popover: #FFFFFF;
+  --popover-foreground: #09090B;
+  --primary: #2563EB;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F4F4F5;
+  --secondary-foreground: #18181B;
+  --muted: #F4F4F5;
+  --muted-foreground: #71717A;
+  --accent: #F4F4F5;
+  --accent-foreground: #18181B;
+  --destructive: #DC2626;
+  --destructive-foreground: #FAFAFA;
+  --border: #E4E4E7;
+  --input: #E4E4E7;
+  --ring: #2563EB;
+
+  --sidebar: #F4F4F5;
+  --sidebar-foreground: #52525B;
+  --sidebar-hover: #E4E4E7;
+  --sidebar-active: #D4D4D8;
+
+  --status-bar: #F4F4F5;
+  --status-bar-foreground: #52525B;
+
+  --green: #16A34A;
+  --red: #DC2626;
+  --yellow: #CA8A04;
+  --orange: #EA580C;
+  --purple: #9333EA;
+  --cyan: #0891B2;
+  --blue: #2563EB;
+}
+
+/* ============================================================
+   Matrix Theme (Codex CLI inspired)
+   ============================================================ */
+.theme-matrix {
+  --background: #0D1117;
+  --foreground: #00FF41;
+  --card: #161B22;
+  --card-foreground: #00FF41;
+  --popover: #161B22;
+  --popover-foreground: #00FF41;
+  --primary: #00FF41;
+  --primary-foreground: #0D1117;
+  --secondary: #161B22;
+  --secondary-foreground: #00FF41;
+  --muted: #21262D;
+  --muted-foreground: #008F11;
+  --accent: #21262D;
+  --accent-foreground: #00FF41;
+  --destructive: #FF3333;
+  --destructive-foreground: #00FF41;
+  --border: #30363D;
+  --input: #21262D;
+  --ring: #00FF41;
+
+  --sidebar: #0D1117;
+  --sidebar-foreground: #008F11;
+  --sidebar-hover: #161B22;
+  --sidebar-active: #21262D;
+
+  --status-bar: #161B22;
+  --status-bar-foreground: #008F11;
+
+  --green: #00FF41;
+  --red: #FF3333;
+  --yellow: #FFD700;
+  --orange: #FF8C00;
+  --purple: #B44CFF;
+  --cyan: #00CED1;
+  --blue: #00BFFF;
+}
+
+/* ============================================================
+   Base Styles
+   ============================================================ */
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--muted);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+  }
+}
+
+/* ============================================================
+   Utility Classes
+   ============================================================ */
+@layer utilities {
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* ============================================================
+   Price Flash Animations
+   ============================================================ */
+@keyframes flash-green {
+  0% { background-color: rgba(0, 255, 65, 0.15); }
+  100% { background-color: transparent; }
+}
+
+@keyframes flash-red {
+  0% { background-color: rgba(255, 51, 51, 0.15); }
+  100% { background-color: transparent; }
+}
+
+.price-up {
+  animation: flash-green 0.6s ease-out;
+}
+
+.price-down {
+  animation: flash-red 0.6s ease-out;
+}
+
+/* ============================================================
+   Pulse notification for large trades
+   ============================================================ */
+@keyframes pulse-notify {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.whale-pulse {
+  animation: pulse-notify 0.5s ease-in-out 3;
+}

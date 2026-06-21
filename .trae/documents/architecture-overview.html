@@ -1,0 +1,2416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PolyRader CS2 — 技术架构与产品设计</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg-primary: #0a0e17;
+    --bg-secondary: #111827;
+    --bg-card: #161d2e;
+    --bg-card-hover: #1c2540;
+    --neon-cyan: #00f0ff;
+    --neon-purple: #b44aff;
+    --neon-green: #00ff88;
+    --neon-red: #ff3366;
+    --neon-orange: #ff9f1c;
+    --text-primary: #e8eaf0;
+    --text-secondary: #8b95a8;
+    --text-muted: #4a5568;
+    --border: #1e2a3a;
+    --glow-cyan: 0 0 20px rgba(0, 240, 255, 0.3);
+    --glow-purple: 0 0 20px rgba(180, 74, 255, 0.3);
+    --glow-green: 0 0 20px rgba(0, 255, 136, 0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image:
+      linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Scanline effect */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .container {
+    position: relative;
+    z-index: 2;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 40px;
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    position: relative;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    background: rgba(0, 240, 255, 0.08);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    border-radius: 20px;
+    font-size: 13px;
+    color: var(--neon-cyan);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 30px;
+    animation: fadeInUp 0.8s ease;
+  }
+
+  .hero-badge .dot {
+    width: 6px; height: 6px;
+    background: var(--neon-cyan);
+    border-radius: 50%;
+    animation: pulse-dot 2s infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; box-shadow: 0 0 4px var(--neon-cyan); }
+    50% { opacity: 0.4; box-shadow: 0 0 8px var(--neon-cyan); }
+  }
+
+  .hero-title {
+    font-size: 72px;
+    font-weight: 700;
+    letter-spacing: -2px;
+    margin-bottom: 12px;
+    animation: fadeInUp 0.8s ease 0.1s both;
+  }
+
+  .hero-title .highlight {
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-subtitle {
+    font-size: 20px;
+    color: var(--text-secondary);
+    max-width: 700px;
+    margin-bottom: 50px;
+    animation: fadeInUp 0.8s ease 0.2s both;
+  }
+
+  .hero-subtitle strong { color: var(--neon-cyan); font-weight: 500; }
+
+  .hero-stats {
+    display: flex;
+    gap: 60px;
+    animation: fadeInUp 0.8s ease 0.3s both;
+  }
+
+  .hero-stat { text-align: center; }
+
+  .hero-stat .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--neon-cyan);
+  }
+
+  .hero-stat .label {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  .scroll-indicator {
+    position: absolute;
+    bottom: 40px;
+    animation: bounce 2s infinite;
+  }
+
+  .scroll-indicator svg { width: 24px; height: 24px; stroke: var(--text-muted); }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(10px); }
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== SECTIONS ===== */
+  .section {
+    padding: 100px 0;
+    position: relative;
+  }
+
+  .section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--neon-cyan);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .section-label::before {
+    content: '';
+    display: block;
+    width: 20px;
+    height: 1px;
+    background: var(--neon-cyan);
+  }
+
+  .section-title {
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    margin-bottom: 16px;
+  }
+
+  .section-desc {
+    font-size: 17px;
+    color: var(--text-secondary);
+    max-width: 700px;
+    margin-bottom: 50px;
+  }
+
+  /* ===== ARCHITECTURE DIAGRAM ===== */
+  .arch-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 50px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .arch-container::before {
+    content: 'SYSTEM ARCHITECTURE';
+    position: absolute;
+    top: 12px; right: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+  }
+
+  .arch-layers {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+  }
+
+  .arch-layer { position: relative; }
+
+  .arch-layer-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--neon-cyan);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    padding-left: 4px;
+  }
+
+  .arch-nodes {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .arch-node {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    min-width: 180px;
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: default;
+  }
+
+  .arch-node:hover {
+    border-color: var(--neon-cyan);
+    box-shadow: var(--glow-cyan);
+    transform: translateY(-2px);
+  }
+
+  .arch-node .node-icon { font-size: 20px; margin-bottom: 8px; }
+  .arch-node .node-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .arch-node .node-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+
+  .arch-node.highlight-cyan { border-color: rgba(0, 240, 255, 0.4); }
+  .arch-node.highlight-purple { border-color: rgba(180, 74, 255, 0.4); }
+  .arch-node.highlight-green { border-color: rgba(0, 255, 136, 0.4); }
+  .arch-node.highlight-orange { border-color: rgba(255, 159, 28, 0.4); }
+
+  .data-stream-bar {
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--neon-cyan), var(--neon-purple), transparent);
+    background-size: 200% 100%;
+    animation: dataStream 3s linear infinite;
+    border-radius: 2px;
+    margin: 20px 0;
+  }
+
+  @keyframes dataStream {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+
+  /* ===== FEATURE GRID ===== */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .feature-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px 28px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .feature-card:hover {
+    border-color: rgba(0, 240, 255, 0.3);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  }
+
+  .feature-card:hover::before { opacity: 1; }
+
+  .feature-icon {
+    width: 48px; height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin-bottom: 20px;
+  }
+
+  .feature-icon.cyan { background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.2); }
+  .feature-icon.purple { background: rgba(180, 74, 255, 0.1); border: 1px solid rgba(180, 74, 255, 0.2); }
+  .feature-icon.green { background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.2); }
+  .feature-icon.orange { background: rgba(255, 159, 28, 0.1); border: 1px solid rgba(255, 159, 28, 0.2); }
+  .feature-icon.red { background: rgba(255, 51, 102, 0.1); border: 1px solid rgba(255, 51, 102, 0.2); }
+
+  .feature-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+  .feature-desc { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+
+  .feature-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 16px;
+  }
+
+  .feature-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    background: rgba(0, 240, 255, 0.06);
+    border: 1px solid rgba(0, 240, 255, 0.15);
+    color: var(--neon-cyan);
+  }
+
+  /* ===== DATA FLOW ===== */
+  .dataflow {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 50px 40px;
+  }
+
+  .dataflow-steps {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    position: relative;
+  }
+
+  .dataflow-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    padding: 0 10px;
+  }
+
+  .dataflow-step-icon {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin: 0 auto 16px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .dataflow-step-icon.cyan-bg { background: rgba(0, 240, 255, 0.15); border: 2px solid var(--neon-cyan); }
+  .dataflow-step-icon.purple-bg { background: rgba(180, 74, 255, 0.15); border: 2px solid var(--neon-purple); }
+  .dataflow-step-icon.green-bg { background: rgba(0, 255, 136, 0.15); border: 2px solid var(--neon-green); }
+  .dataflow-step-icon.orange-bg { background: rgba(255, 159, 28, 0.15); border: 2px solid var(--neon-orange); }
+  .dataflow-step-icon.red-bg { background: rgba(255, 51, 102, 0.15); border: 2px solid var(--neon-red); }
+
+  .dataflow-step-title { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+  .dataflow-step-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+  .dataflow-connector {
+    position: absolute;
+    top: 28px;
+    left: calc(50% + 30px);
+    right: calc(-50% + 30px);
+    height: 2px;
+    background: linear-gradient(90deg, rgba(0, 240, 255, 0.5), rgba(180, 74, 255, 0.5));
+  }
+
+  .dataflow-connector::after {
+    content: '';
+    position: absolute;
+    right: -3px;
+    top: -3px;
+    width: 8px;
+    height: 8px;
+    border-top: 2px solid var(--neon-purple);
+    border-right: 2px solid var(--neon-purple);
+    transform: rotate(45deg);
+  }
+
+  /* ===== TECH STACK TABLE ===== */
+  .tech-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .tech-table thead th {
+    background: rgba(0, 240, 255, 0.06);
+    padding: 14px 24px;
+    text-align: left;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--neon-cyan);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tech-table tbody td {
+    padding: 14px 24px;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tech-table tbody tr:last-child td { border-bottom: none; }
+  .tech-table tbody tr:hover { background: rgba(0, 240, 255, 0.03); }
+
+  .tech-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  .tech-badge.cyan { background: rgba(0, 240, 255, 0.1); color: var(--neon-cyan); }
+  .tech-badge.purple { background: rgba(180, 74, 255, 0.1); color: var(--neon-purple); }
+  .tech-badge.green { background: rgba(0, 255, 136, 0.1); color: var(--neon-green); }
+  .tech-badge.orange { background: rgba(255, 159, 28, 0.1); color: var(--neon-orange); }
+
+  /* ===== SCORE SECTION ===== */
+  .score-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+  }
+
+  .score-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+  }
+
+  .score-card-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .score-bar-group {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .score-bar-item { position: relative; }
+
+  .score-bar-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+
+  .score-bar-label span:first-child { color: var(--text-secondary); }
+  .score-bar-label span:last-child { font-family: 'JetBrains Mono', monospace; color: var(--neon-cyan); font-weight: 600; }
+
+  .score-bar-track {
+    height: 6px;
+    background: var(--bg-secondary);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1.5s ease;
+  }
+
+  .score-bar-fill.cyan { background: linear-gradient(90deg, rgba(0, 240, 255, 0.3), var(--neon-cyan)); }
+  .score-bar-fill.purple { background: linear-gradient(90deg, rgba(180, 74, 255, 0.3), var(--neon-purple)); }
+  .score-bar-fill.green { background: linear-gradient(90deg, rgba(0, 255, 136, 0.3), var(--neon-green)); }
+  .score-bar-fill.orange { background: linear-gradient(90deg, rgba(255, 159, 28, 0.3), var(--neon-orange)); }
+  .score-bar-fill.red { background: linear-gradient(90deg, rgba(255, 51, 102, 0.3), var(--neon-red)); }
+
+  /* ===== PAGES GRID ===== */
+  .pages-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+
+  .page-preview {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: default;
+  }
+
+  .page-preview:hover {
+    border-color: rgba(0, 240, 255, 0.3);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  }
+
+  .page-preview-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .page-preview-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .page-preview-name { font-weight: 600; font-size: 15px; }
+  .page-preview-route { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); }
+
+  .page-preview-body { padding: 16px 20px; }
+
+  .page-module {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+    border-bottom: 1px solid rgba(30, 42, 58, 0.5);
+  }
+
+  .page-module:last-child { border-bottom: none; }
+
+  .page-module-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--neon-cyan);
+    flex-shrink: 0;
+  }
+
+  /* ===== API SECTION ===== */
+  .api-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .api-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+
+  .api-method {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .api-method.get { background: rgba(0, 255, 136, 0.15); color: var(--neon-green); }
+  .api-method.post { background: rgba(0, 240, 255, 0.15); color: var(--neon-cyan); }
+  .api-method.ws { background: rgba(180, 74, 255, 0.15); color: var(--neon-purple); }
+
+  .api-path { color: var(--text-primary); }
+  .api-desc { color: var(--text-muted); margin-left: auto; font-family: 'Space Grotesk', sans-serif; }
+
+  .api-body { padding: 20px 24px; }
+
+  .api-code {
+    background: var(--bg-primary);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    overflow-x: auto;
+  }
+
+  .api-code .key { color: var(--neon-cyan); }
+  .api-code .type { color: var(--neon-purple); }
+  .api-code .comment { color: var(--text-muted); }
+
+  /* ===== WHALE DEMO ===== */
+  .whale-demo {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 40px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+  }
+
+  .whale-score-visual {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .whale-score-ring {
+    position: relative;
+    width: 200px;
+    height: 200px;
+  }
+
+  .whale-score-ring svg {
+    width: 200px;
+    height: 200px;
+    transform: rotate(-90deg);
+  }
+
+  .whale-score-ring .score-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .whale-score-ring .score-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--neon-red);
+  }
+
+  .whale-score-ring .score-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .whale-score-details {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .whale-address {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: var(--bg-primary);
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    display: inline-block;
+  }
+
+  /* ===== NEON PULSE ===== */
+  @keyframes neonPulse {
+    0%, 100% { text-shadow: 0 0 10px rgba(0, 240, 255, 0.5); }
+    50% { text-shadow: 0 0 20px rgba(0, 240, 255, 0.8), 0 0 40px rgba(0, 240, 255, 0.3); }
+  }
+
+  .neon-pulse { animation: neonPulse 3s ease-in-out infinite; }
+
+  /* ===== ANIMATION ===== */
+  .animate-in {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.6s ease;
+  }
+
+  .animate-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ===== FOOTER ===== */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 40px 0;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  .footer .footer-brand { font-weight: 600; color: var(--neon-cyan); }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 1024px) {
+    .feature-grid { grid-template-columns: repeat(2, 1fr); }
+    .pages-grid { grid-template-columns: repeat(2, 1fr); }
+    .score-section { grid-template-columns: 1fr; }
+    .whale-demo { grid-template-columns: 1fr; }
+    .hero-title { font-size: 48px; }
+  }
+
+  @media (max-width: 768px) {
+    .container { padding: 0 20px; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .pages-grid { grid-template-columns: 1fr; }
+    .hero-title { font-size: 36px; }
+    .hero-stats { gap: 30px; flex-wrap: wrap; }
+    .dataflow-steps { flex-direction: column; gap: 20px; }
+    .dataflow-connector { display: none; }
+    .arch-nodes { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== HERO ==================== -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      <span>Prediction Market Intelligence</span>
+    </div>
+    <h1 class="hero-title">
+      Poly<span class="highlight">Rader</span> CS2
+    </h1>
+    <p class="hero-subtitle">
+      融合 <strong>Polymarket 实时数据流</strong>、<strong>巨鲸与内幕追踪</strong>、<strong>CS2 赛事分析</strong>、<strong>多 LLM 并行预测</strong>与<strong>多源信号对比</strong>的开源预测市场工具
+    </p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="value mono">6</div>
+        <div class="label">数据源接入</div>
+      </div>
+      <div class="hero-stat">
+        <div class="value mono">5</div>
+        <div class="label">核心模块</div>
+      </div>
+      <div class="hero-stat">
+        <div class="value mono">7</div>
+        <div class="label">路由页面</div>
+      </div>
+      <div class="hero-stat">
+        <div class="value mono">ms</div>
+        <div class="label">实时延迟</div>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-indicator">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M7 13l5 5 5-5M7 6l5 5 5-5"/>
+    </svg>
+  </div>
+</section>
+
+<!-- ==================== THEME PREVIEW ==================== -->
+<section class="section">
+  <div class="container">
+    <div class="section-label">00 / Design System</div>
+    <h2 class="section-title">三主题设计系统</h2>
+    <p class="section-desc">Dark / Light 对齐 Cursor IDE 配色，Matrix 对齐 Codex CLI 终端绿配色。基于 shadcn/ui 组件规范，8px 网格系统。</p>
+
+    <div class="theme-grid animate-in">
+      <!-- Dark Theme -->
+      <div class="theme-card" data-theme="dark">
+        <div class="theme-preview dark-preview">
+          <div class="theme-preview-header">
+            <div class="theme-dots"><span></span><span></span><span></span></div>
+            <div class="theme-tab active">Dashboard</div>
+            <div class="theme-tab">Market</div>
+          </div>
+          <div class="theme-preview-body">
+            <div class="theme-sidebar">
+              <div class="theme-sidebar-icon active"></div>
+              <div class="theme-sidebar-icon"></div>
+              <div class="theme-sidebar-icon"></div>
+              <div class="theme-sidebar-icon"></div>
+            </div>
+            <div class="theme-content">
+              <div class="theme-stat-row">
+                <div class="theme-stat-card">
+                  <div class="theme-stat-label">Active Markets</div>
+                  <div class="theme-stat-value">24</div>
+                </div>
+                <div class="theme-stat-card">
+                  <div class="theme-stat-label">24h Volume</div>
+                  <div class="theme-stat-value">$1.2M</div>
+                </div>
+                <div class="theme-stat-card">
+                  <div class="theme-stat-label">Signals</div>
+                  <div class="theme-stat-value green">8</div>
+                </div>
+              </div>
+              <div class="theme-table">
+                <div class="theme-table-row head">
+                  <span>Market</span><span>Price</span><span>24h</span><span>Vol</span>
+                </div>
+                <div class="theme-table-row">
+                  <span>NaVi vs FaZe</span><span class="mono">$0.62</span><span class="green">+5%</span><span class="mono">$245K</span>
+                </div>
+                <div class="theme-table-row">
+                  <span>G2 vs Vitality</span><span class="mono">$0.55</span><span class="red">-2%</span><span class="mono">$180K</span>
+                </div>
+                <div class="theme-table-row">
+                  <span>Spirit vs MOUZ</span><span class="mono">$0.48</span><span class="green">+12%</span><span class="mono">$320K</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="theme-info">
+          <div class="theme-name">Dark</div>
+          <div class="theme-desc">Cursor Dark+ 配色<br/>#1e1e1e / #d4d4d4 / #007acc</div>
+          <div class="theme-colors">
+            <span style="background:#1e1e1e" title="Background"></span>
+            <span style="background:#d4d4d4" title="Foreground"></span>
+            <span style="background:#007acc" title="Accent"></span>
+            <span style="background:#4ec9b0" title="Green"></span>
+            <span style="background:#f14c4c" title="Red"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Light Theme -->
+      <div class="theme-card" data-theme="light">
+        <div class="theme-preview light-preview">
+          <div class="theme-preview-header">
+            <div class="theme-dots"><span></span><span></span><span></span></div>
+            <div class="theme-tab active">Dashboard</div>
+            <div class="theme-tab">Market</div>
+          </div>
+          <div class="theme-preview-body">
+            <div class="theme-sidebar">
+              <div class="theme-sidebar-icon active"></div>
+              <div class="theme-sidebar-icon"></div>
+              <div class="theme-sidebar-icon"></div>
+              <div class="theme-sidebar-icon"></div>
+            </div>
+            <div class="theme-content">
+              <div class="theme-stat-row">
+                <div class="theme-stat-card">
+                  <div class="theme-stat-label">Active Markets</div>
+                  <div class="theme-stat-value">24</div>
+                </div>
+                <div class="theme-stat-card">
+                  <div class="theme-stat-label">24h Volume</div>
+                  <div class="theme-stat-value">$1.2M</div>
+                </div>
+                <div class="theme-stat-card">
+                  <div class="theme-stat-label">Signals</div>
+                  <div class="theme-stat-value green">8</div>
+                </div>
+              </div>
+              <div class="theme-table">
+                <div class="theme-table-row head">
+                  <span>Market</span><span>Price</span><span>24h</span><span>Vol</span>
+                </div>
+                <div class="theme-table-row">
+                  <span>NaVi vs FaZe</span><span class="mono">$0.62</span><span class="green">+5%</span><span class="mono">$245K</span>
+                </div>
+                <div class="theme-table-row">
+                  <span>G2 vs Vitality</span><span class="mono">$0.55</span><span class="red">-2%</span><span class="mono">$180K</span>
+                </div>
+                <div class="theme-table-row">
+                  <span>Spirit vs MOUZ</span><span class="mono">$0.48</span><span class="green">+12%</span><span class="mono">$320K</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="theme-info">
+          <div class="theme-name">Light</div>
+          <div class="theme-desc">Cursor Light+ 配色<br/>#ffffff / #3b3b3b / #005fb8</div>
+          <div class="theme-colors">
+            <span style="background:#ffffff;border:1px solid #ddd" title="Background"></span>
+            <span style="background:#3b3b3b" title="Foreground"></span>
+            <span style="background:#005fb8" title="Accent"></span>
+            <span style="background:#008000" title="Green"></span>
+            <span style="background:#cd3131" title="Red"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Matrix Theme -->
+      <div class="theme-card" data-theme="matrix">
+        <div class="theme-preview matrix-preview">
+          <div class="theme-preview-header">
+            <div class="theme-dots"><span></span><span></span><span></span></div>
+            <div class="theme-tab active">Dashboard</div>
+            <div class="theme-tab">Market</div>
+          </div>
+          <div class="theme-preview-body">
+            <div class="theme-sidebar">
+              <div class="theme-sidebar-icon active"></div>
+              <div class="theme-sidebar-icon"></div>
+              <div class="theme-sidebar-icon"></div>
+              <div class="theme-sidebar-icon"></div>
+            </div>
+            <div class="theme-content">
+              <div class="theme-stat-row">
+                <div class="theme-stat-card">
+                  <div class="theme-stat-label">Active Markets</div>
+                  <div class="theme-stat-value">24</div>
+                </div>
+                <div class="theme-stat-card">
+                  <div class="theme-stat-label">24h Volume</div>
+                  <div class="theme-stat-value">$1.2M</div>
+                </div>
+                <div class="theme-stat-card">
+                  <div class="theme-stat-label">Signals</div>
+                  <div class="theme-stat-value green">8</div>
+                </div>
+              </div>
+              <div class="theme-table">
+                <div class="theme-table-row head">
+                  <span>Market</span><span>Price</span><span>24h</span><span>Vol</span>
+                </div>
+                <div class="theme-table-row">
+                  <span>NaVi vs FaZe</span><span class="mono">$0.62</span><span class="green">+5%</span><span class="mono">$245K</span>
+                </div>
+                <div class="theme-table-row">
+                  <span>G2 vs Vitality</span><span class="mono">$0.55</span><span class="red">-2%</span><span class="mono">$180K</span>
+                </div>
+                <div class="theme-table-row">
+                  <span>Spirit vs MOUZ</span><span class="mono">$0.48</span><span class="green">+12%</span><span class="mono">$320K</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="theme-info">
+          <div class="theme-name">Matrix</div>
+          <div class="theme-desc">Codex CLI Matrix 配色<br/>#0d1117 / #00ff41 / #00ff41</div>
+          <div class="theme-colors">
+            <span style="background:#0d1117" title="Background"></span>
+            <span style="background:#00ff41" title="Foreground"></span>
+            <span style="background:#00ff41" title="Accent"></span>
+            <span style="background:#00ff41" title="Green"></span>
+            <span style="background:#ff3333" title="Red"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .theme-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .theme-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .theme-card:hover {
+    border-color: rgba(0, 240, 255, 0.3);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  }
+
+  .theme-preview {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  /* Dark Theme Preview */
+  .dark-preview {
+    background: #1e1e1e;
+    color: #d4d4d4;
+  }
+  .dark-preview .theme-preview-header {
+    background: #323233;
+    border-bottom: 1px solid #3c3c3c;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dark-preview .theme-dots span {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+    background: #555;
+  }
+  .dark-preview .theme-tab {
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    background: #2d2d2d;
+    color: #999;
+  }
+  .dark-preview .theme-tab.active {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    border-top: 2px solid #007acc;
+  }
+  .dark-preview .theme-preview-body {
+    display: flex;
+    height: 200px;
+  }
+  .dark-preview .theme-sidebar {
+    width: 32px;
+    background: #252526;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 8px;
+    gap: 8px;
+    border-right: 1px solid #3c3c3c;
+  }
+  .dark-preview .theme-sidebar-icon {
+    width: 20px; height: 20px;
+    border-radius: 4px;
+    background: #555;
+  }
+  .dark-preview .theme-sidebar-icon.active {
+    background: #007acc;
+  }
+  .dark-preview .theme-content {
+    flex: 1;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .dark-preview .theme-stat-row {
+    display: flex;
+    gap: 6px;
+  }
+  .dark-preview .theme-stat-card {
+    flex: 1;
+    background: #252526;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    padding: 6px 8px;
+  }
+  .dark-preview .theme-stat-label {
+    font-size: 8px;
+    color: #858585;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .dark-preview .theme-stat-value {
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: #d4d4d4;
+  }
+  .dark-preview .theme-stat-value.green { color: #4ec9b0; }
+  .dark-preview .theme-table {
+    flex: 1;
+    background: #252526;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    overflow: hidden;
+    font-size: 8px;
+  }
+  .dark-preview .theme-table-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    padding: 4px 8px;
+    border-bottom: 1px solid #3c3c3c;
+  }
+  .dark-preview .theme-table-row.head {
+    background: #2d2d2d;
+    color: #858585;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .dark-preview .theme-table-row:last-child { border-bottom: none; }
+  .dark-preview .green { color: #4ec9b0; }
+  .dark-preview .red { color: #f14c4c; }
+  .dark-preview .mono { font-family: 'JetBrains Mono', monospace; font-size: 8px; }
+
+  /* Light Theme Preview */
+  .light-preview {
+    background: #ffffff;
+    color: #3b3b3b;
+  }
+  .light-preview .theme-preview-header {
+    background: #dddddd;
+    border-bottom: 1px solid #e5e5e5;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .light-preview .theme-dots span {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+    background: #c4c4c4;
+  }
+  .light-preview .theme-tab {
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    background: #ececec;
+    color: #999;
+  }
+  .light-preview .theme-tab.active {
+    background: #ffffff;
+    color: #3b3b3b;
+    border-top: 2px solid #005fb8;
+  }
+  .light-preview .theme-preview-body {
+    display: flex;
+    height: 200px;
+  }
+  .light-preview .theme-sidebar {
+    width: 32px;
+    background: #f3f3f3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 8px;
+    gap: 8px;
+    border-right: 1px solid #e5e5e5;
+  }
+  .light-preview .theme-sidebar-icon {
+    width: 20px; height: 20px;
+    border-radius: 4px;
+    background: #c4c4c4;
+  }
+  .light-preview .theme-sidebar-icon.active {
+    background: #005fb8;
+  }
+  .light-preview .theme-content {
+    flex: 1;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .light-preview .theme-stat-row {
+    display: flex;
+    gap: 6px;
+  }
+  .light-preview .theme-stat-card {
+    flex: 1;
+    background: #f3f3f3;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    padding: 6px 8px;
+  }
+  .light-preview .theme-stat-label {
+    font-size: 8px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .light-preview .theme-stat-value {
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: #3b3b3b;
+  }
+  .light-preview .theme-stat-value.green { color: #008000; }
+  .light-preview .theme-table {
+    flex: 1;
+    background: #f3f3f3;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    overflow: hidden;
+    font-size: 8px;
+  }
+  .light-preview .theme-table-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    padding: 4px 8px;
+    border-bottom: 1px solid #e5e5e5;
+  }
+  .light-preview .theme-table-row.head {
+    background: #ececec;
+    color: #999;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .light-preview .theme-table-row:last-child { border-bottom: none; }
+  .light-preview .green { color: #008000; }
+  .light-preview .red { color: #cd3131; }
+  .light-preview .mono { font-family: 'JetBrains Mono', monospace; font-size: 8px; }
+
+  /* Matrix Theme Preview */
+  .matrix-preview {
+    background: #0d1117;
+    color: #00ff41;
+  }
+  .matrix-preview .theme-preview-header {
+    background: #0a0e13;
+    border-bottom: 1px solid #1a3a1a;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .matrix-preview .theme-dots span {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+    background: #1a4a1a;
+  }
+  .matrix-preview .theme-tab {
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    background: #0a1a0a;
+    color: #2a5a2a;
+  }
+  .matrix-preview .theme-tab.active {
+    background: #0d1117;
+    color: #00ff41;
+    border-top: 2px solid #00ff41;
+    text-shadow: 0 0 6px rgba(0, 255, 65, 0.5);
+  }
+  .matrix-preview .theme-preview-body {
+    display: flex;
+    height: 200px;
+  }
+  .matrix-preview .theme-sidebar {
+    width: 32px;
+    background: #0a0e13;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 8px;
+    gap: 8px;
+    border-right: 1px solid #1a3a1a;
+  }
+  .matrix-preview .theme-sidebar-icon {
+    width: 20px; height: 20px;
+    border-radius: 4px;
+    background: #1a3a1a;
+  }
+  .matrix-preview .theme-sidebar-icon.active {
+    background: #00ff41;
+    box-shadow: 0 0 8px rgba(0, 255, 65, 0.4);
+  }
+  .matrix-preview .theme-content {
+    flex: 1;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .matrix-preview .theme-stat-row {
+    display: flex;
+    gap: 6px;
+  }
+  .matrix-preview .theme-stat-card {
+    flex: 1;
+    background: #0a0e13;
+    border: 1px solid #1a3a1a;
+    border-radius: 4px;
+    padding: 6px 8px;
+  }
+  .matrix-preview .theme-stat-label {
+    font-size: 8px;
+    color: #2a5a2a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .matrix-preview .theme-stat-value {
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: #00ff41;
+    text-shadow: 0 0 6px rgba(0, 255, 65, 0.3);
+  }
+  .matrix-preview .theme-stat-value.green { color: #00ff41; }
+  .matrix-preview .theme-table {
+    flex: 1;
+    background: #0a0e13;
+    border: 1px solid #1a3a1a;
+    border-radius: 4px;
+    overflow: hidden;
+    font-size: 8px;
+  }
+  .matrix-preview .theme-table-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    padding: 4px 8px;
+    border-bottom: 1px solid #1a3a1a;
+  }
+  .matrix-preview .theme-table-row.head {
+    background: #0a1a0a;
+    color: #2a5a2a;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .matrix-preview .theme-table-row:last-child { border-bottom: none; }
+  .matrix-preview .green { color: #00ff41; }
+  .matrix-preview .red { color: #ff3333; }
+  .matrix-preview .mono { font-family: 'JetBrains Mono', monospace; font-size: 8px; }
+
+  /* Theme Info */
+  .theme-info {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+  }
+  .theme-name {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .theme-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+  .theme-colors {
+    display: flex;
+    gap: 6px;
+  }
+  .theme-colors span {
+    width: 20px; height: 20px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+
+  @media (max-width: 1024px) {
+    .theme-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<!-- ==================== ARCHITECTURE ==================== -->
+<section class="section">
+  <div class="container">
+    <div class="section-label">01 / Architecture</div>
+    <h2 class="section-title">系统架构设计</h2>
+    <p class="section-desc">四层分离架构：前端展示层、后端服务层、数据持久层、外部数据源层，通过 WebSocket 实现实时数据流的全链路贯通。</p>
+
+    <div class="arch-container animate-in">
+      <div class="arch-layers">
+        <!-- Frontend Layer -->
+        <div class="arch-layer">
+          <div class="arch-layer-label">Frontend Layer</div>
+          <div class="arch-nodes">
+            <div class="arch-node highlight-cyan">
+              <div class="node-icon">&#9883;</div>
+              <div class="node-title">React 18 + TypeScript</div>
+              <div class="node-desc">SPA 应用，Vite 构建</div>
+            </div>
+            <div class="arch-node highlight-cyan">
+              <div class="node-icon">&#127912;</div>
+              <div class="node-title">Tailwind CSS 3</div>
+              <div class="node-desc">暗色赛博朋克主题</div>
+            </div>
+            <div class="arch-node highlight-cyan">
+              <div class="node-icon">&#128202;</div>
+              <div class="node-title">Recharts + Lightweight Charts</div>
+              <div class="node-desc">统计图表 + K 线图</div>
+            </div>
+            <div class="arch-node highlight-cyan">
+              <div class="node-icon">&#128279;</div>
+              <div class="node-title">D3.js</div>
+              <div class="node-desc">力导向地址关联图谱</div>
+            </div>
+            <div class="arch-node highlight-cyan">
+              <div class="node-icon">&#128230;</div>
+              <div class="node-title">Zustand</div>
+              <div class="node-desc">轻量全局状态管理</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="data-stream-bar"></div>
+
+        <!-- Backend Layer -->
+        <div class="arch-layer">
+          <div class="arch-layer-label">Backend Layer</div>
+          <div class="arch-nodes">
+            <div class="arch-node highlight-purple">
+              <div class="node-icon">&#127760;</div>
+              <div class="node-title">Express.js + TypeScript</div>
+              <div class="node-desc">REST API + WebSocket Server</div>
+            </div>
+            <div class="arch-node highlight-purple">
+              <div class="node-icon">&#128269;</div>
+              <div class="node-title">AnomalyService</div>
+              <div class="node-desc">实时异常检测引擎</div>
+            </div>
+            <div class="arch-node highlight-purple">
+              <div class="node-icon">&#129504;</div>
+              <div class="node-title">WhaleService</div>
+              <div class="node-desc">巨鲸识别与评分</div>
+            </div>
+            <div class="arch-node highlight-purple">
+              <div class="node-icon">&#128200;</div>
+              <div class="node-title">SignalService</div>
+              <div class="node-desc">多源信号聚合与预测</div>
+            </div>
+            <div class="arch-node highlight-purple">
+              <div class="node-icon">&#127918;</div>
+              <div class="node-title">EsportsService</div>
+              <div class="node-desc">CS2 赛事数据聚合</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="data-stream-bar"></div>
+
+        <!-- Data Layer -->
+        <div class="arch-layer">
+          <div class="arch-layer-label">Data Layer</div>
+          <div class="arch-nodes">
+            <div class="arch-node highlight-green">
+              <div class="node-icon">&#128024;</div>
+              <div class="node-title">PostgreSQL</div>
+              <div class="node-desc">历史数据持久化，时序存储</div>
+            </div>
+            <div class="arch-node highlight-green">
+              <div class="node-icon">&#9889;</div>
+              <div class="node-title">Redis</div>
+              <div class="node-desc">实时缓存 + Pub/Sub 消息分发</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="data-stream-bar"></div>
+
+        <!-- External Services -->
+        <div class="arch-layer">
+          <div class="arch-layer-label">External Services</div>
+          <div class="arch-nodes">
+            <div class="arch-node highlight-orange">
+              <div class="node-icon">&#128225;</div>
+              <div class="node-title">Polymarket CLOB WS</div>
+              <div class="node-desc">wss://ws-subscriptions-clob</div>
+            </div>
+            <div class="arch-node highlight-orange">
+              <div class="node-icon">&#128203;</div>
+              <div class="node-title">Polymarket REST API</div>
+              <div class="node-desc">clob.polymarket.com</div>
+            </div>
+            <div class="arch-node highlight-orange">
+              <div class="node-icon">&#127991;</div>
+              <div class="node-title">Gamma API</div>
+              <div class="node-desc">市场元数据与分类</div>
+            </div>
+            <div class="arch-node highlight-orange">
+              <div class="node-icon">&#127942;</div>
+              <div class="node-title">HLTV Scraper</div>
+              <div class="node-desc">排名、Rating、地图数据</div>
+            </div>
+            <div class="arch-node highlight-orange">
+              <div class="node-icon">&#127919;</div>
+              <div class="node-title">FACEIT API</div>
+              <div class="node-desc">选手统计与比赛数据</div>
+            </div>
+            <div class="arch-node highlight-orange">
+              <div class="node-icon">&#9929;</div>
+              <div class="node-title">Polygon RPC</div>
+              <div class="node-desc">链上 CTF 事件监听</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== DATA FLOW ==================== -->
+<section class="section">
+  <div class="container">
+    <div class="section-label">02 / Data Flow</div>
+    <h2 class="section-title">实时数据流架构</h2>
+    <p class="section-desc">从 Polymarket WebSocket 到前端展示的全链路实时数据管道，毫秒级延迟。</p>
+
+    <div class="dataflow animate-in">
+      <div class="dataflow-steps">
+        <div class="dataflow-step">
+          <div class="dataflow-step-icon orange-bg">&#128225;</div>
+          <div class="dataflow-step-title">数据采集</div>
+          <div class="dataflow-step-desc">Polymarket CLOB WebSocket<br/>订阅 book + trade 频道</div>
+          <div class="dataflow-connector"></div>
+        </div>
+        <div class="dataflow-step">
+          <div class="dataflow-step-icon purple-bg">&#128260;</div>
+          <div class="dataflow-step-title">数据分发</div>
+          <div class="dataflow-step-desc">Redis Pub/Sub 广播<br/>多模块并行消费</div>
+          <div class="dataflow-connector"></div>
+        </div>
+        <div class="dataflow-step">
+          <div class="dataflow-step-icon red-bg">&#129504;</div>
+          <div class="dataflow-step-title">实时分析</div>
+          <div class="dataflow-step-desc">异常检测引擎<br/>巨鲸评分计算</div>
+          <div class="dataflow-connector"></div>
+        </div>
+        <div class="dataflow-step">
+          <div class="dataflow-step-icon cyan-bg">&#128190;</div>
+          <div class="dataflow-step-title">持久化</div>
+          <div class="dataflow-step-desc">PostgreSQL 时序存储<br/>Redis 热点缓存</div>
+          <div class="dataflow-connector"></div>
+        </div>
+        <div class="dataflow-step">
+          <div class="dataflow-step-icon green-bg">&#128187;</div>
+          <div class="dataflow-step-title">前端推送</div>
+          <div class="dataflow-step-desc">WebSocket 推送客户端<br/>实时图表渲染</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== LLM ORCHESTRATION ==================== -->
+<section class="section">
+  <div class="container">
+    <div class="section-label">03 / LLM Orchestration</div>
+    <h2 class="section-title">多 LLM 分析编排</h2>
+    <p class="section-desc">数据采集 → 提示词工程 → 并行调用多个 LLM → 结果聚合 → 用户决策 → 下单 → 胜率统计，全链路闭环。</p>
+
+    <div class="dataflow animate-in">
+      <div class="dataflow-steps" style="grid-template-columns: repeat(7, 1fr);">
+        <div class="dataflow-step">
+          <div class="dataflow-step-icon orange-bg">&#128230;</div>
+          <div class="dataflow-step-title">数据采集</div>
+          <div class="dataflow-step-desc">HLTV + Polymarket<br/>自动采集比赛数据</div>
+          <div class="dataflow-connector"></div>
+        </div>
+        <div class="dataflow-step">
+          <div class="dataflow-step-icon purple-bg">&#128221;</div>
+          <div class="dataflow-step-title">提示词工程</div>
+          <div class="dataflow-step-desc">4层提示词模板<br/>数据格式化注入</div>
+          <div class="dataflow-connector"></div>
+        </div>
+        <div class="dataflow-step">
+          <div class="dataflow-step-icon cyan-bg">&#9881;</div>
+          <div class="dataflow-step-title">并行调用</div>
+          <div class="dataflow-step-desc">GPT-4o / Claude<br/>Gemini / DeepSeek</div>
+          <div class="dataflow-connector"></div>
+        </div>
+        <div class="dataflow-step">
+          <div class="dataflow-step-icon green-bg">&#128200;</div>
+          <div class="dataflow-step-title">结果聚合</div>
+          <div class="dataflow-step-desc">投票 + 加权置信度<br/>共识度检测</div>
+          <div class="dataflow-connector"></div>
+        </div>
+        <div class="dataflow-step">
+          <div class="dataflow-step-icon purple-bg">&#9997;</div>
+          <div class="dataflow-step-title">用户决策</div>
+          <div class="dataflow-step-desc">确认 / 调整 / 跳过<br/>最终下单判断</div>
+          <div class="dataflow-connector"></div>
+        </div>
+        <div class="dataflow-step">
+          <div class="dataflow-step-icon red-bg">&#128184;</div>
+          <div class="dataflow-step-title">执行下单</div>
+          <div class="dataflow-step-desc">CLOB API 下单<br/>BUY / SELL</div>
+          <div class="dataflow-connector"></div>
+        </div>
+        <div class="dataflow-step">
+          <div class="dataflow-step-icon cyan-bg">&#128202;</div>
+          <div class="dataflow-step-title">胜率统计</div>
+          <div class="dataflow-step-desc">LLM 准确率追踪<br/>用户胜率对比</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LLM Cards -->
+    <div class="feature-grid animate-in" style="margin-top: 40px;">
+      <div class="feature-card">
+        <div class="feature-icon purple-bg">&#129504;</div>
+        <div class="feature-title">多 LLM 并行分析</div>
+        <div class="feature-desc">同时调用 GPT-4o、Claude、Gemini、DeepSeek 等 6 个 LLM，从不同角度分析同一场比赛，提供多视角参考。支持用户自由选择启用哪些 LLM。</div>
+        <div class="feature-tags">
+          <span class="feature-tag">GPT-4o</span>
+          <span class="feature-tag">Claude 3.5</span>
+          <span class="feature-tag">Gemini 2.0</span>
+          <span class="feature-tag">DeepSeek V3</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon green-bg">&#128221;</div>
+        <div class="feature-title">提示词工程</div>
+        <div class="feature-desc">4 层提示词架构：角色定义 → 上下文模板 → 数据注入 → 输出约束。自动采集 HLTV 排名/战绩/地图/选手 + Polymarket 价格/资金流，格式化为结构化提示词。</div>
+        <div class="feature-tags">
+          <span class="feature-tag">模板版本管理</span>
+          <span class="feature-tag">A/B 测试</span>
+          <span class="feature-tag">数据自动注入</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon orange-bg">&#128200;</div>
+        <div class="feature-title">结果聚合与共识</div>
+        <div class="feature-desc">投票统计 + 历史准确率加权 + 共识度检测。全票通过标记高共识（绿色），多数通过标记中共识（黄色），分歧较大标记低共识（红色）。</div>
+        <div class="feature-tags">
+          <span class="feature-tag">加权投票</span>
+          <span class="feature-tag">共识度检测</span>
+          <span class="feature-tag">置信度校准</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon red-bg">&#128202;</div>
+        <div class="feature-title">胜率统计追踪</div>
+        <div class="feature-desc">持续追踪每个 LLM 的预测准确率、置信度校准曲线、用户个人胜率、用户 vs LLM 对比。支持 LLM 排行榜和预测历史记录查询。</div>
+        <div class="feature-tags">
+          <span class="feature-tag">LLM 排行榜</span>
+          <span class="feature-tag">校准曲线</span>
+          <span class="feature-tag">用户 vs LLM</span>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon accent-bg">&#9881;</div>
+        <div class="feature-title">LLM 管理</div>
+        <div class="feature-desc">API Key 加密管理、一键连通性测试、Token 配额与费用监控。支持 6 个 Provider 统一管理，AES-256 加密存储，从 .env 批量导入。</div>
+        <div class="feature-tags">
+          <span class="feature-tag">Key 管理</span>
+          <span class="feature-tag">连通性测试</span>
+          <span class="feature-tag">配额监控</span>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon purple-bg">&#128200;</div>
+        <div class="feature-title">LLM 胜率分析</div>
+        <div class="feature-desc">单个 LLM 的深度表现分析：按赛事级别/预测方向/置信度区间/战队/地图分组统计，含校准曲线、盈亏曲线和准确率趋势图。</div>
+        <div class="feature-tags">
+          <span class="feature-tag">深度分析</span>
+          <span class="feature-tag">分组统计</span>
+          <span class="feature-tag">趋势追踪</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prompt Engineering Detail -->
+    <div class="arch-container animate-in" style="margin-top: 40px;">
+      <div class="arch-layers">
+        <div class="arch-layer">
+          <div class="arch-layer-label">Prompt Engineering — 4 Layer Architecture</div>
+          <div class="arch-nodes" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="arch-node highlight-cyan">
+              <div class="node-icon">&#128100;</div>
+              <div class="node-title">Layer 1: System Prompt</div>
+              <div class="node-desc">角色定义：CS2 电竞分析师<br/>规定分析框架与输出格式</div>
+            </div>
+            <div class="arch-node highlight-purple">
+              <div class="node-icon">&#128196;</div>
+              <div class="node-title">Layer 2: Context Template</div>
+              <div class="node-desc">上下文模板：比赛基础信息<br/>赛制、赛事级别、时间</div>
+            </div>
+            <div class="arch-node highlight-green">
+              <div class="node-icon">&#128228;</div>
+              <div class="node-title">Layer 3: Data Injection</div>
+              <div class="node-desc">动态数据填充：排名/战绩<br/>地图/选手/市场/巨鲸</div>
+            </div>
+            <div class="arch-node highlight-orange">
+              <div class="node-icon">&#128274;</div>
+              <div class="node-title">Layer 4: Output Schema</div>
+              <div class="node-desc">强制 JSON 输出约束<br/>winner/confidence/reasoning</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== FEATURES ==================== -->
+<section class="section">
+  <div class="container">
+    <div class="section-label">04 / Core Features</div>
+    <h2 class="section-title">核心功能模块</h2>
+    <p class="section-desc">参考 PolyWorld、PolyTerm、polymarket-insider-detector 三大开源工具的架构优势，面向 CS2 市场深度定制。</p>
+
+    <div class="feature-grid animate-in">
+      <div class="feature-card">
+        <div class="feature-icon cyan">&#128202;</div>
+        <div class="feature-title">市场总览仪表板</div>
+        <div class="feature-desc">CS2 活跃市场实时概览，价格脉冲动画、交易量柱状图、市场热力图，支持按赛事级别/队伍筛选。</div>
+        <div class="feature-tags">
+          <span class="feature-tag">实时卡片</span>
+          <span class="feature-tag">热力图</span>
+          <span class="feature-tag">趋势市场</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon purple">&#128200;</div>
+        <div class="feature-title">实时数据监控</div>
+        <div class="feature-desc">订单簿深度实时可视化、成交流推送、交互式 K 线/折线走势图，毫秒级数据刷新。</div>
+        <div class="feature-tags">
+          <span class="feature-tag">WebSocket</span>
+          <span class="feature-tag">K线图</span>
+          <span class="feature-tag">深度图</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon red">&#128011;</div>
+        <div class="feature-title">巨鲸与内幕追踪</div>
+        <div class="feature-desc">大户持仓追踪排行、多维度可疑度评分（交易时机/金额/频率/关联）、地址关联图谱、异常告警推送。</div>
+        <div class="feature-tags">
+          <span class="feature-tag">Whale Tracking</span>
+          <span class="feature-tag">Insider Detection</span>
+          <span class="feature-tag">Address Graph</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon green">&#127918;</div>
+        <div class="feature-title">CS2 赛事分析</div>
+        <div class="feature-desc">HLTV 排名集成、战队地图池分析、选手 Rating 2.0 面板、赛程日历关联 Polymarket 市场。</div>
+        <div class="feature-tags">
+          <span class="feature-tag">HLTV</span>
+          <span class="feature-tag">Map Pool</span>
+          <span class="feature-tag">Rating 2.0</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon orange">&#128256;</div>
+        <div class="feature-title">多源信号对比</div>
+        <div class="feature-desc">Polymarket 赔率 vs 预测模型 vs 社区共识三方对比，套利机会扫描，信号偏差热图。</div>
+        <div class="feature-tags">
+          <span class="feature-tag">Arbitrage</span>
+          <span class="feature-tag">Signal Deviation</span>
+          <span class="feature-tag">Ensemble Model</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon cyan">&#128276;</div>
+        <div class="feature-title">智能告警系统</div>
+        <div class="feature-desc">价格阈值告警、大额交易告警、异常行为告警，支持多严重等级与实时推送。</div>
+        <div class="feature-tags">
+          <span class="feature-tag">Real-time Alert</span>
+          <span class="feature-tag">Severity Levels</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== WHALE SCORE DEMO ==================== -->
+<section class="section">
+  <div class="container">
+    <div class="section-label">05 / Whale Detection</div>
+    <h2 class="section-title">巨鲸识别与评分体系</h2>
+    <p class="section-desc">参考 polymarket-insider-detector 的多层检测架构，融合统计异常检测与链上行为分析。</p>
+
+    <div class="whale-demo animate-in">
+      <div class="whale-score-visual">
+        <div class="whale-score-ring">
+          <svg viewBox="0 0 200 200">
+            <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(255,51,102,0.1)" stroke-width="8"/>
+            <circle cx="100" cy="100" r="85" fill="none" stroke="var(--neon-red)" stroke-width="8"
+              stroke-dasharray="534" stroke-dashoffset="134" stroke-linecap="round"/>
+            <circle cx="100" cy="100" r="70" fill="none" stroke="rgba(180,74,255,0.1)" stroke-width="6"/>
+            <circle cx="100" cy="100" r="70" fill="none" stroke="var(--neon-purple)" stroke-width="6"
+              stroke-dasharray="440" stroke-dashoffset="176" stroke-linecap="round"/>
+            <circle cx="100" cy="100" r="55" fill="none" stroke="rgba(0,240,255,0.1)" stroke-width="4"/>
+            <circle cx="100" cy="100" r="55" fill="none" stroke="var(--neon-cyan)" stroke-width="4"
+              stroke-dasharray="345" stroke-dashoffset="138" stroke-linecap="round"/>
+          </svg>
+          <div class="score-value">
+            <div class="score-number neon-pulse">75</div>
+            <div class="score-label">Suspicion</div>
+          </div>
+        </div>
+        <div style="margin-top: 20px; display: flex; gap: 16px; font-size: 12px;">
+          <span style="color: var(--neon-red);">&#9679; 交易时机</span>
+          <span style="color: var(--neon-purple);">&#9679; 交易金额</span>
+          <span style="color: var(--neon-cyan);">&#9679; 地址关联</span>
+        </div>
+      </div>
+      <div class="whale-score-details">
+        <div>
+          <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 6px;">监测地址</div>
+          <div class="whale-address">0x7a3f...8b2c</div>
+        </div>
+        <div class="score-bar-group">
+          <div class="score-bar-item">
+            <div class="score-bar-label"><span>交易时机 (30%)</span><span>82/100</span></div>
+            <div class="score-bar-track"><div class="score-bar-fill red" style="width: 82%;"></div></div>
+          </div>
+          <div class="score-bar-item">
+            <div class="score-bar-label"><span>交易金额 (25%)</span><span>68/100</span></div>
+            <div class="score-bar-track"><div class="score-bar-fill purple" style="width: 68%;"></div></div>
+          </div>
+          <div class="score-bar-item">
+            <div class="score-bar-label"><span>交易频率 (20%)</span><span>55/100</span></div>
+            <div class="score-bar-track"><div class="score-bar-fill orange" style="width: 55%;"></div></div>
+          </div>
+          <div class="score-bar-item">
+            <div class="score-bar-label"><span>地址关联 (25%)</span><span>91/100</span></div>
+            <div class="score-bar-track"><div class="score-bar-fill cyan" style="width: 91%;"></div></div>
+          </div>
+        </div>
+        <div style="background: rgba(255,51,102,0.08); border: 1px solid rgba(255,51,102,0.2); border-radius: 8px; padding: 12px 16px;">
+          <div style="font-size: 13px; color: var(--neon-red); font-weight: 600; margin-bottom: 4px;">&#9888; 高可疑告警</div>
+          <div style="font-size: 12px; color: var(--text-secondary);">该地址在事件确认前 2 小时内集中买入 $45,000，且与 3 个关联地址协同交易，综合评分超过 70 阈值。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== PAGES ==================== -->
+<section class="section">
+  <div class="container">
+    <div class="section-label">06 / Page Design</div>
+    <h2 class="section-title">页面设计概览</h2>
+    <p class="section-desc">13 个核心路由页面，覆盖从市场发现到 LLM 分析、投注统计、LLM 管理的完整用户旅程。</p>
+
+    <div class="pages-grid animate-in">
+      <div class="page-preview">
+        <div class="page-preview-header">
+          <div class="page-preview-icon" style="background: rgba(0,240,255,0.1); border: 1px solid rgba(0,240,255,0.2);">&#128202;</div>
+          <div>
+            <div class="page-preview-name">市场总览</div>
+            <div class="page-preview-route">/</div>
+          </div>
+        </div>
+        <div class="page-preview-body">
+          <div class="page-module"><span class="page-module-dot"></span>实时市场卡片</div>
+          <div class="page-module"><span class="page-module-dot"></span>市场热力图</div>
+          <div class="page-module"><span class="page-module-dot"></span>趋势市场列表</div>
+          <div class="page-module"><span class="page-module-dot"></span>赛事级别筛选</div>
+        </div>
+      </div>
+
+      <div class="page-preview">
+        <div class="page-preview-header">
+          <div class="page-preview-icon" style="background: rgba(180,74,255,0.1); border: 1px solid rgba(180,74,255,0.2);">&#128200;</div>
+          <div>
+            <div class="page-preview-name">市场详情</div>
+            <div class="page-preview-route">/market/:id</div>
+          </div>
+        </div>
+        <div class="page-preview-body">
+          <div class="page-module"><span class="page-module-dot"></span>价格走势图 (K线)</div>
+          <div class="page-module"><span class="page-module-dot"></span>订单簿深度图</div>
+          <div class="page-module"><span class="page-module-dot"></span>成交流</div>
+          <div class="page-module"><span class="page-module-dot"></span>市场元数据</div>
+        </div>
+      </div>
+
+      <div class="page-preview">
+        <div class="page-preview-header">
+          <div class="page-preview-icon" style="background: rgba(255,51,102,0.1); border: 1px solid rgba(255,51,102,0.2);">&#128011;</div>
+          <div>
+            <div class="page-preview-name">巨鲸追踪</div>
+            <div class="page-preview-route">/whales</div>
+          </div>
+        </div>
+        <div class="page-preview-body">
+          <div class="page-module"><span class="page-module-dot"></span>大户持仓排行</div>
+          <div class="page-module"><span class="page-module-dot"></span>异常行为告警</div>
+          <div class="page-module"><span class="page-module-dot"></span>可疑度评分面板</div>
+          <div class="page-module"><span class="page-module-dot"></span>地址关联图谱</div>
+        </div>
+      </div>
+
+      <div class="page-preview">
+        <div class="page-preview-header">
+          <div class="page-preview-icon" style="background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.2);">&#127918;</div>
+          <div>
+            <div class="page-preview-name">赛事分析</div>
+            <div class="page-preview-route">/esports</div>
+          </div>
+        </div>
+        <div class="page-preview-body">
+          <div class="page-module"><span class="page-module-dot"></span>战队数据面板</div>
+          <div class="page-module"><span class="page-module-dot"></span>选手数据面板</div>
+          <div class="page-module"><span class="page-module-dot"></span>赛程日历</div>
+          <div class="page-module"><span class="page-module-dot"></span>预测信号</div>
+        </div>
+      </div>
+
+      <div class="page-preview">
+        <div class="page-preview-header">
+          <div class="page-preview-icon" style="background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.2);">&#129504;</div>
+          <div>
+            <div class="page-preview-name">LLM 分析</div>
+            <div class="page-preview-route">/llm/analysis/:matchId</div>
+          </div>
+        </div>
+        <div class="page-preview-body">
+          <div class="page-module"><span class="page-module-dot"></span>多 LLM 预测结果</div>
+          <div class="page-module"><span class="page-module-dot"></span>共识度与置信度</div>
+          <div class="page-module"><span class="page-module-dot"></span>用户决策操作区</div>
+          <div class="page-module"><span class="page-module-dot"></span>一键下单</div>
+        </div>
+      </div>
+
+      <div class="page-preview">
+        <div class="page-preview-header">
+          <div class="page-preview-icon" style="background: rgba(255,159,28,0.1); border: 1px solid rgba(255,159,28,0.2);">&#128202;</div>
+          <div>
+            <div class="page-preview-name">胜率统计</div>
+            <div class="page-preview-route">/stats</div>
+          </div>
+        </div>
+        <div class="page-preview-body">
+          <div class="page-module"><span class="page-module-dot"></span>LLM 排行榜</div>
+          <div class="page-module"><span class="page-module-dot"></span>置信度校准曲线</div>
+          <div class="page-module"><span class="page-module-dot"></span>用户统计面板</div>
+          <div class="page-module"><span class="page-module-dot"></span>预测历史记录</div>
+        </div>
+      </div>
+
+      <div class="page-preview">
+        <div class="page-preview-header">
+          <div class="page-preview-icon" style="background: rgba(0,122,204,0.1); border: 1px solid rgba(0,122,204,0.2);">&#9881;</div>
+          <div>
+            <div class="page-preview-name">LLM 管理</div>
+            <div class="page-preview-route">/llm/manage</div>
+          </div>
+        </div>
+        <div class="page-preview-body">
+          <div class="page-module"><span class="page-module-dot"></span>API Key 配置与加密</div>
+          <div class="page-module"><span class="page-module-dot"></span>连通性测试面板</div>
+          <div class="page-module"><span class="page-module-dot"></span>配额与用量监控</div>
+          <div class="page-module"><span class="page-module-dot"></span>连接日志</div>
+        </div>
+      </div>
+
+      <div class="page-preview">
+        <div class="page-preview-header">
+          <div class="page-preview-icon" style="background: rgba(197,134,192,0.1); border: 1px solid rgba(197,134,192,0.2);">&#128200;</div>
+          <div>
+            <div class="page-preview-name">LLM 胜率分析</div>
+            <div class="page-preview-route">/llm/analysis/:providerId</div>
+          </div>
+        </div>
+        <div class="page-preview-body">
+          <div class="page-module"><span class="page-module-dot"></span>赛事级别/方向分组</div>
+          <div class="page-module"><span class="page-module-dot"></span>置信度校准曲线</div>
+          <div class="page-module"><span class="page-module-dot"></span>战队/地图准确率</div>
+          <div class="page-module"><span class="page-module-dot"></span>准确率趋势图</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== TECH STACK ==================== -->
+<section class="section">
+  <div class="container">
+    <div class="section-label">07 / Tech Stack</div>
+    <h2 class="section-title">技术栈总览</h2>
+    <p class="section-desc">全栈 TypeScript 方案，React + Express 前后端分离，PostgreSQL + Redis 双存储引擎。</p>
+
+    <div class="animate-in">
+      <table class="tech-table">
+        <thead>
+          <tr>
+            <th>层级</th>
+            <th>技术选型</th>
+            <th>标签</th>
+            <th>用途</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>前端框架</td>
+            <td>React 18 + TypeScript</td>
+            <td><span class="tech-badge cyan">SPA</span></td>
+            <td>单页应用，Vite 构建</td>
+          </tr>
+          <tr>
+            <td>样式方案</td>
+            <td>Tailwind CSS 3</td>
+            <td><span class="tech-badge cyan">CSS</span></td>
+            <td>原子化 CSS，暗色赛博朋克主题</td>
+          </tr>
+          <tr>
+            <td>图表库</td>
+            <td>Recharts + Lightweight Charts</td>
+            <td><span class="tech-badge purple">VIZ</span></td>
+            <td>统计图表 + K 线图</td>
+          </tr>
+          <tr>
+            <td>图可视化</td>
+            <td>D3.js</td>
+            <td><span class="tech-badge purple">VIZ</span></td>
+            <td>力导向图 - 地址关联图谱</td>
+          </tr>
+          <tr>
+            <td>状态管理</td>
+            <td>Zustand</td>
+            <td><span class="tech-badge cyan">STATE</span></td>
+            <td>轻量级全局状态管理</td>
+          </tr>
+          <tr>
+            <td>路由</td>
+            <td>React Router DOM v6</td>
+            <td><span class="tech-badge cyan">ROUTE</span></td>
+            <td>客户端路由，7 个核心页面</td>
+          </tr>
+          <tr>
+            <td>后端框架</td>
+            <td>Express.js 4 + TypeScript</td>
+            <td><span class="tech-badge green">API</span></td>
+            <td>ESM 模式，REST + WebSocket</td>
+          </tr>
+          <tr>
+            <td>实时通信</td>
+            <td>ws (WebSocket)</td>
+            <td><span class="tech-badge orange">REALTIME</span></td>
+            <td>前后端双向实时通信</td>
+          </tr>
+          <tr>
+            <td>数据库</td>
+            <td>PostgreSQL</td>
+            <td><span class="tech-badge green">DB</span></td>
+            <td>历史数据持久化，时序数据存储</td>
+          </tr>
+          <tr>
+            <td>缓存</td>
+            <td>Redis</td>
+            <td><span class="tech-badge orange">CACHE</span></td>
+            <td>实时数据缓存 + Pub/Sub 消息分发</td>
+          </tr>
+          <tr>
+            <td>链上交互</td>
+            <td>ethers.js v6</td>
+            <td><span class="tech-badge orange">WEB3</span></td>
+            <td>Polygon 链上事件查询</td>
+          </tr>
+          <tr>
+            <td>定时任务</td>
+            <td>node-cron</td>
+            <td><span class="tech-badge green">SCHED</span></td>
+            <td>定期数据抓取与评分计算</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== PREDICTION MODEL ==================== -->
+<section class="section">
+  <div class="container">
+    <div class="section-label">08 / Prediction Model</div>
+    <h2 class="section-title">集成预测模型</h2>
+    <p class="section-desc">融合 5 大信号源的集成模型（Ensemble），输出胜率预测并与市场赔率对比，发现定价偏差。</p>
+
+    <div class="score-section animate-in">
+      <div class="score-card">
+        <div class="score-card-title">
+          <span style="color: var(--neon-cyan);">&#128208;</span> 模型权重分配
+        </div>
+        <div class="score-bar-group">
+          <div class="score-bar-item">
+            <div class="score-bar-label"><span>HLTV 排名差值模型</span><span>25%</span></div>
+            <div class="score-bar-track"><div class="score-bar-fill cyan" style="width: 25%;"></div></div>
+          </div>
+          <div class="score-bar-item">
+            <div class="score-bar-label"><span>近期状态模型</span><span>20%</span></div>
+            <div class="score-bar-track"><div class="score-bar-fill purple" style="width: 20%;"></div></div>
+          </div>
+          <div class="score-bar-item">
+            <div class="score-bar-label"><span>地图池匹配模型</span><span>20%</span></div>
+            <div class="score-bar-track"><div class="score-bar-fill green" style="width: 20%;"></div></div>
+          </div>
+          <div class="score-bar-item">
+            <div class="score-bar-label"><span>交锋记录模型</span><span>15%</span></div>
+            <div class="score-bar-track"><div class="score-bar-fill orange" style="width: 15%;"></div></div>
+          </div>
+          <div class="score-bar-item">
+            <div class="score-bar-label"><span>市场情绪模型</span><span>20%</span></div>
+            <div class="score-bar-track"><div class="score-bar-fill red" style="width: 20%;"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="score-card">
+        <div class="score-card-title">
+          <span style="color: var(--neon-green);">&#128256;</span> 信号对比示例
+        </div>
+        <div>
+          <div style="background: var(--bg-primary); border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+            <div style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">NaVi vs FaZe - IEM Katowice</div>
+            <div style="display: flex; gap: 20px; align-items: center;">
+              <div style="text-align: center; flex: 1;">
+                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Polymarket</div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 24px; color: var(--neon-cyan); font-weight: 700;">62%</div>
+              </div>
+              <div style="color: var(--text-muted); font-size: 20px;">vs</div>
+              <div style="text-align: center; flex: 1;">
+                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">模型预测</div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 24px; color: var(--neon-green); font-weight: 700;">71%</div>
+              </div>
+              <div style="color: var(--text-muted); font-size: 20px;">vs</div>
+              <div style="text-align: center; flex: 1;">
+                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">社区共识</div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 24px; color: var(--neon-purple); font-weight: 700;">65%</div>
+              </div>
+            </div>
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 12px;">
+              <span style="color: var(--neon-green);">&#9650; 偏差 +9% (模型 vs 市场)</span>
+              <span style="color: var(--neon-orange);">&#9889; 潜在套利机会</span>
+            </div>
+          </div>
+          <div style="background: var(--bg-primary); border-radius: 8px; padding: 16px;">
+            <div style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">G2 vs Vitality - BLAST Major</div>
+            <div style="display: flex; gap: 20px; align-items: center;">
+              <div style="text-align: center; flex: 1;">
+                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Polymarket</div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 24px; color: var(--neon-cyan); font-weight: 700;">55%</div>
+              </div>
+              <div style="color: var(--text-muted); font-size: 20px;">vs</div>
+              <div style="text-align: center; flex: 1;">
+                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">模型预测</div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 24px; color: var(--neon-green); font-weight: 700;">48%</div>
+              </div>
+              <div style="color: var(--text-muted); font-size: 20px;">vs</div>
+              <div style="text-align: center; flex: 1;">
+                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">社区共识</div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 24px; color: var(--neon-purple); font-weight: 700;">52%</div>
+              </div>
+            </div>
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 12px;">
+              <span style="color: var(--neon-red);">&#9660; 偏差 -7% (模型 vs 市场)</span>
+              <span style="color: var(--text-muted);">信号一致度低</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== API DESIGN ==================== -->
+<section class="section">
+  <div class="container">
+    <div class="section-label">09 / API Design</div>
+    <h2 class="section-title">API 接口设计</h2>
+    <p class="section-desc">RESTful API + WebSocket 双协议，覆盖市场数据、巨鲸追踪、赛事分析与信号对比四大领域。</p>
+
+    <div style="display: flex; flex-direction: column; gap: 16px;" class="animate-in">
+      <div class="api-section">
+        <div class="api-header">
+          <span class="api-method get">GET</span>
+          <span class="api-path">/api/markets</span>
+          <span class="api-desc">获取 CS2 活跃市场列表</span>
+        </div>
+        <div class="api-body">
+          <div class="api-code">
+<span class="key">Query</span>: { sport?, event_tier?, sort_by?: <span class="type">"volume" | "change" | "liquidity"</span>, page? }
+<span class="key">Response</span>: {
+  markets: Array&lt;{ condition_id, question, slug, tokens, volume, liquidity, change_24h, teams, match_time }&gt;,
+  total, page
+}
+          </div>
+        </div>
+      </div>
+
+      <div class="api-section">
+        <div class="api-header">
+          <span class="api-method get">GET</span>
+          <span class="api-path">/api/whales</span>
+          <span class="api-desc">获取大户排行</span>
+        </div>
+        <div class="api-body">
+          <div class="api-code">
+<span class="key">Query</span>: { market_id?, sort_by?: <span class="type">"volume" | "pnl" | "suspicion"</span>, limit? }
+<span class="key">Response</span>: Array&lt;{ address, label?, total_volume, total_pnl, suspicion_score, active_positions, last_active }&gt;
+          </div>
+        </div>
+      </div>
+
+      <div class="api-section">
+        <div class="api-header">
+          <span class="api-method get">GET</span>
+          <span class="api-path">/api/signals/:marketId</span>
+          <span class="api-desc">获取预测信号与多源对比</span>
+        </div>
+        <div class="api-body">
+          <div class="api-code">
+<span class="key">Response</span>: {
+  polymarket_price, model_prediction, community_consensus, deviation,
+  arbitrage_opportunities: Array&lt;{ type, profit_pct, description }&gt;,
+  confidence, factors: Array&lt;{ name, weight, direction: <span class="type">"bullish" | "bearish" | "neutral"</span> }&gt;
+}
+          </div>
+        </div>
+      </div>
+
+      <div class="api-section">
+        <div class="api-header">
+          <span class="api-method ws">WS</span>
+          <span class="api-path">/ws</span>
+          <span class="api-desc">实时数据推送</span>
+        </div>
+        <div class="api-body">
+          <div class="api-code">
+<span class="comment">// 客户端订阅</span>
+{ type: <span class="type">"subscribe"</span>, channels: [<span class="type">"price"</span>, <span class="type">"trades"</span>, <span class="type">"book"</span>, <span class="type">"alerts"</span>], markets?: [...] }
+
+<span class="comment">// 服务端推送</span>
+{ type: <span class="type">"price_update"</span> | <span class="type">"trade"</span> | <span class="type">"book_update"</span> | <span class="type">"whale_alert"</span> | <span class="type">"anomaly"</span>, ...payload }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== DATA UPDATE FREQUENCY ==================== -->
+<section class="section">
+  <div class="container">
+    <div class="section-label">10 / Data Frequency</div>
+    <h2 class="section-title">数据更新频率</h2>
+    <p class="section-desc">不同数据源采用差异化的更新策略，平衡实时性与系统负载。</p>
+
+    <div class="animate-in" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px;">
+      <div class="score-bar-group">
+        <div class="score-bar-item">
+          <div class="score-bar-label"><span>订单簿 / 成交记录</span><span>毫秒级</span></div>
+          <div class="score-bar-track"><div class="score-bar-fill cyan" style="width: 100%;"></div></div>
+        </div>
+        <div class="score-bar-item">
+          <div class="score-bar-label"><span>市场价格</span><span>秒级</span></div>
+          <div class="score-bar-track"><div class="score-bar-fill cyan" style="width: 90%;"></div></div>
+        </div>
+        <div class="score-bar-item">
+          <div class="score-bar-label"><span>异常评分</span><span>实时流式</span></div>
+          <div class="score-bar-track"><div class="score-bar-fill red" style="width: 95%;"></div></div>
+        </div>
+        <div class="score-bar-item">
+          <div class="score-bar-label"><span>巨鲸持仓</span><span>分钟级</span></div>
+          <div class="score-bar-track"><div class="score-bar-fill purple" style="width: 60%;"></div></div>
+        </div>
+        <div class="score-bar-item">
+          <div class="score-bar-label"><span>预测信号</span><span>每 15 分钟</span></div>
+          <div class="score-bar-track"><div class="score-bar-fill green" style="width: 25%;"></div></div>
+        </div>
+        <div class="score-bar-item">
+          <div class="score-bar-label"><span>FACEIT 数据</span><span>每 30 分钟</span></div>
+          <div class="score-bar-track"><div class="score-bar-fill orange" style="width: 20%;"></div></div>
+        </div>
+        <div class="score-bar-item">
+          <div class="score-bar-label"><span>HLTV 数据</span><span>每小时</span></div>
+          <div class="score-bar-track"><div class="score-bar-fill orange" style="width: 10%;"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== REFERENCE COMPARISON ==================== -->
+<section class="section">
+  <div class="container">
+    <div class="section-label">11 / Open Source Reference</div>
+    <h2 class="section-title">开源工具参考对比</h2>
+    <p class="section-desc">PolyRader CS2 融合三大开源工具的架构优势，并针对 CS2 市场深度定制。</p>
+
+    <div class="animate-in">
+      <table class="tech-table">
+        <thead>
+          <tr>
+            <th>特性</th>
+            <th>PolyWorld</th>
+            <th>PolyTerm</th>
+            <th>insider-detector</th>
+            <th style="color: var(--neon-cyan);">PolyRader CS2</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>定位</td>
+            <td>全能分析仪表板</td>
+            <td>交易终端</td>
+            <td>内幕检测专项</td>
+            <td style="color: var(--neon-cyan); font-weight: 600;">CS2 垂直分析平台</td>
+          </tr>
+          <tr>
+            <td>实时性</td>
+            <td>轮询（分钟级）</td>
+            <td>WebSocket（秒级）</td>
+            <td>批处理+流式</td>
+            <td style="color: var(--neon-cyan);">WebSocket（毫秒级）</td>
+          </tr>
+          <tr>
+            <td>巨鲸追踪</td>
+            <td>链上转账监控</td>
+            <td>订单流监控</td>
+            <td>多维度评分</td>
+            <td style="color: var(--neon-cyan);">多维度评分 + 地址图谱</td>
+          </tr>
+          <tr>
+            <td>异常检测</td>
+            <td>基础阈值</td>
+            <td>简单阈值</td>
+            <td>ML + 统计 + 规则</td>
+            <td style="color: var(--neon-cyan);">实时规则引擎 + 统计模型</td>
+          </tr>
+          <tr>
+            <td>赛事数据</td>
+            <td>无</td>
+            <td>无</td>
+            <td>无</td>
+            <td style="color: var(--neon-cyan);">HLTV + FACEIT + Pandascore</td>
+          </tr>
+          <tr>
+            <td>预测模型</td>
+            <td>无</td>
+            <td>无</td>
+            <td>无</td>
+            <td style="color: var(--neon-cyan);">5 维集成模型</td>
+          </tr>
+          <tr>
+            <td>信号对比</td>
+            <td>基础</td>
+            <td>无</td>
+            <td>无</td>
+            <td style="color: var(--neon-cyan);">三方信号 + 套利扫描</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== FOOTER ==================== -->
+<footer class="footer">
+  <div class="container">
+    <span class="footer-brand">PolyRader CS2</span> &mdash; 开源 Polymarket CS2 预测市场分析工具 &middot; 技术架构与产品设计文档
+  </div>
+</footer>
+
+<script>
+// Intersection Observer for scroll animations
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.animate-in').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>

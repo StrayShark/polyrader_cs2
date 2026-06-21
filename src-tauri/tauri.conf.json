@@ -1,0 +1,66 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "PolyRader CS2",
+  "version": "0.2.0",
+  "identifier": "com.polyrader.cs2",
+  "build": {
+    "frontendDist": "../packages/web/dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev:web",
+    "beforeBuildCommand": "npm run build:web && npm run build:server"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "PolyRader CS2",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 680,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' http://localhost:* ws://localhost:* https://gamma-api.polymarket.com https://clob.polymarket.com wss://ws-subscriptions-clob.polymarket.com https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://api.deepseek.com https://api.x.ai https://api.groq.com https://polygon-rpc.com; img-src 'self' https://gamma-api.polymarket.com data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:"
+    },
+    "trayIcon": {
+      "iconPath": "icons/32x32.png",
+      "iconAsTemplate": true,
+      "menuOnLeftClick": false
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["dmg", "msi", "appimage"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "createUpdaterArtifacts": true,
+    "resources": [
+      "../packages/server/dist/polyrader-server"
+    ]
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://github.com/dutongxue/polyrader_cs2/releases/latest/download/latest.json"
+      ],
+      "dialog": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY1QzNFRTcxNDkxQzVGQTkKUldTcFh4eEpjZTdEWmZ6SlJZbXRwVDZud3VHTVJIYnkwb1hVcndVSEdDRDRQM05OVFBnMHU2VGEK",
+      "windows": {
+        "installMode": "passive"
+      }
+    },
+    "shell": {
+      "sidecar": true,
+      "scope": []
+    }
+  }
+}

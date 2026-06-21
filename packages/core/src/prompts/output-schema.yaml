@@ -1,0 +1,39 @@
+# Output Schema — JSON structure expected from LLM
+# Included in the system message as the required output format
+
+schema:
+  winProbability:
+    teamA:
+      type: "number"
+      range: "0-1"
+      description: "Team A win probability"
+    teamB:
+      type: "number"
+      range: "0-1"
+      description: "Team B win probability"
+  confidence:
+    type: "number"
+    range: "0-1"
+    description: "How confident you are in this prediction"
+  reasoning:
+    type: "string"
+    description: "Brief analysis of why you made this prediction"
+  keyFactors:
+    type: "array"
+    items: "string"
+    description: "Top 2-4 factors that influenced your prediction"
+  riskAssessment:
+    type: "string"
+    description: "Key risks and uncertainties in this prediction"
+
+example: |
+  {
+    "winProbability": {
+      "teamA": 0.55,
+      "teamB": 0.45
+    },
+    "confidence": 0.75,
+    "reasoning": "Team A has a higher HLTV ranking and better recent form, but Team B's map pool aligns well with the veto.",
+    "keyFactors": ["HLTV ranking", "Recent form", "Map pool advantage"],
+    "riskAssessment": "Lineup not confirmed; potential standin could shift the balance."
+  }
