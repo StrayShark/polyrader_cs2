@@ -8,6 +8,7 @@ export * from './prompt-engine';
 export * from './result-aggregator';
 export * from './stats-engine';
 export * from './simulated-betting-engine';
+export * from './backtest-engine';
 export * from './settlement-engine';
 export * from './key-manager';
 export { MatchStateMachine } from './match-state-machine';

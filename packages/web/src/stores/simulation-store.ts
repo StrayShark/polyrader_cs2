@@ -8,10 +8,12 @@ interface SimulationState {
   equityCurves: Record<string, EquityCurvePoint[]>;
   isLoading: boolean;
   error: string | null;
+  backtestResult: { providerStats: ProviderSimulationStats[]; totalBets: number } | null;
   fetchConfig: () => Promise<void>;
   updateConfig: (config: Partial<SimulationConfig>) => Promise<boolean>;
   fetchProviderStats: () => Promise<void>;
   fetchEquityCurves: () => Promise<void>;
+  runBacktest: () => Promise<void>;
 }
 
 const DEFAULT_CONFIG: Partial<SimulationConfig> = {
@@ -33,6 +35,7 @@ export const useSimulationStore = create<SimulationState>((set) => ({
   equityCurves: {},
   isLoading: false,
   error: null,
+  backtestResult: null,
 
   fetchConfig: async () => {
     try {
@@ -66,10 +69,20 @@ export const useSimulationStore = create<SimulationState>((set) => ({
 
   fetchEquityCurves: async () => {
     try {
-      const res = await api.get<{ data: Record<string, EquityCurvePoint[]> }>('/simulation/equity-curves');
+      const res = await api.get<{ data: Record<string, EquityCurvePoint[]> }>('/simulation/equity-curve/all');
       set({ equityCurves: res.data ?? {} });
     } catch {
       set({ equityCurves: {} });
+    }
+  },
+
+  runBacktest: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await api.post<{ data: { providerStats: ProviderSimulationStats[]; totalBets: number } }>('/simulation/backtest');
+      set({ backtestResult: res.data, isLoading: false });
+    } catch (err) {
+      set({ error: (err as Error).message, isLoading: false });
     }
   },
 }));

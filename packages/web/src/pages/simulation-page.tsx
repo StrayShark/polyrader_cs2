@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FlaskConical, TrendingUp, Activity } from 'lucide-react';
+import { FlaskConical, TrendingUp, Activity, Rewind } from 'lucide-react';
 import { useSimulationStore } from '../stores/simulation-store';
 import {
   Card, CardHeader, CardTitle, Button, Input, Badge,
@@ -32,7 +32,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 
 export function SimulationPage() {
   const { t } = useI18n();
-  const { config, providerStats, equityCurves, isLoading, error, fetchConfig, updateConfig, fetchProviderStats, fetchEquityCurves } = useSimulationStore();
+  const { config, providerStats, equityCurves, isLoading, error, fetchConfig, updateConfig, fetchProviderStats, fetchEquityCurves, runBacktest, backtestResult } = useSimulationStore();
   const [formData, setFormData] = useState<Partial<SimulationConfig>>({});
   const [saved, setSaved] = useState(false);
 
@@ -92,6 +92,10 @@ export function SimulationPage() {
           <h1 className="text-2xl font-semibold tracking-tight">{t('simulation.title')}</h1>
           <p className="text-sm text-muted-foreground">{t('simulation.subtitle')}</p>
         </div>
+        <Button variant="outline" onClick={runBacktest} disabled={isLoading}>
+          <Rewind className="mr-2 h-4 w-4" />
+          {t('simulation.backtest')}
+        </Button>
       </div>
 
       {/* Configuration Panel */}
@@ -278,6 +282,57 @@ export function SimulationPage() {
                     <TableCell className="px-6 py-2 text-right font-mono">{stat.totalBets ?? 0}</TableCell>
                     <TableCell className="px-6 py-2 text-right font-mono">{(stat.sharpeRatio ?? 0).toFixed(2)}</TableCell>
                     <TableCell className="px-6 py-2 text-right font-mono text-red">{(stat.maxDrawdown ?? 0).toFixed(1)}%</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+      )}
+
+      {/* Backtest Result */}
+      {backtestResult && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Rewind className="h-4 w-4" />
+              {t('simulation.backtestResult')}
+            </CardTitle>
+          </CardHeader>
+          <div className="p-4 pt-0">
+            <p className="text-sm text-muted-foreground mb-3">
+              {t('simulation.backtestTotalBets')}: <span className="font-mono font-medium">{backtestResult.totalBets}</span>
+            </p>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="h-auto px-6 py-2 text-left">{t('simulation.provider')}</TableHead>
+                  <TableHead className="h-auto px-6 py-2 text-right">{t('simulation.totalPnl')}</TableHead>
+                  <TableHead className="h-auto px-6 py-2 text-right">{t('simulation.roi')}</TableHead>
+                  <TableHead className="h-auto px-6 py-2 text-right">{t('simulation.winRate')}</TableHead>
+                  <TableHead className="h-auto px-6 py-2 text-right">{t('simulation.sharpe')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {backtestResult.providerStats.map((stat) => (
+                  <TableRow key={stat.provider}>
+                    <TableCell className="px-6 py-2">
+                      <Badge
+                        variant="default"
+                        className="text-xs"
+                        style={{ backgroundColor: `${PROVIDER_COLORS[stat.provider] ?? '#888'}20`, color: PROVIDER_COLORS[stat.provider] ?? '#888' }}
+                      >
+                        {stat.provider}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className={`px-6 py-2 text-right font-mono ${(stat.totalPnl ?? 0) >= 0 ? 'text-green' : 'text-red'}`}>
+                      {(stat.totalPnl ?? 0) >= 0 ? '+' : ''}${(stat.totalPnl ?? 0).toFixed(2)}
+                    </TableCell>
+                    <TableCell className={`px-6 py-2 text-right font-mono ${(stat.roi ?? 0) >= 0 ? 'text-green' : 'text-red'}`}>
+                      {((stat.roi ?? 0) * 100).toFixed(1)}%
+                    </TableCell>
+                    <TableCell className="px-6 py-2 text-right font-mono">{((stat.winRate ?? 0) * 100).toFixed(1)}%</TableCell>
+                    <TableCell className="px-6 py-2 text-right font-mono">{(stat.sharpeRatio ?? 0).toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

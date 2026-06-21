@@ -1,12 +1,14 @@
-import { SimulatedBettingEngine } from '@polyrader/core';
+import { SimulatedBettingEngine, BacktestEngine } from '@polyrader/core';
 import type { SimulationConfig, ProviderSimulationStats, EquityCurvePoint, SimulatedBet, LLMAnalysisResult, LLMProvider } from '@polyrader/core';
 import { SimulationRepository, LLMRepository } from '@polyrader/infra';
+import { broadcast } from '../websocket';
 import { logger } from '../utils/logger';
 
 export class SimulationService {
   private simRepo = new SimulationRepository();
   private llmRepo = new LLMRepository();
   private bettingEngine = new SimulatedBettingEngine();
+  private backtestEngine = new BacktestEngine();
 
   getConfig(): SimulationConfig {
     return this.simRepo.getConfig();
@@ -51,6 +53,16 @@ export class SimulationService {
       logger.info('Simulation: auto bets placed', {
         matchId, count: bets.length,
         providers: bets.map(b => b.provider),
+      });
+      broadcast('simulation', {
+        type: 'simulation:bets_placed',
+        matchId,
+        bets: bets.map(b => ({
+          id: b.id, provider: b.provider, team: b.team,
+          amount: b.amount, odds: b.odds,
+        })),
+        count: bets.length,
+        timestamp: Date.now(),
       });
     }
     return bets;
@@ -100,5 +112,31 @@ export class SimulationService {
    */
   getBetHistory(provider: LLMProvider, limit = 50): SimulatedBet[] {
     return this.llmRepo.getBetsByProvider(provider, limit);
+  }
+
+  /**
+   * 回测：使用历史分析数据重放模拟盘
+   */
+  runBacktest(): {
+    providerStats: ProviderSimulationStats[];
+    totalBets: number;
+  } {
+    const config = this.getConfig();
+    const historicalAnalyses = this.llmRepo.getHistoricalAnalyses(1000);
+    const settledBets = this.llmRepo.getBets(500).filter(b => b.result !== 'pending');
+
+    const result = this.backtestEngine.runBacktest(
+      historicalAnalyses, settledBets, config,
+    );
+
+    logger.info('Simulation: backtest completed', {
+      analyses: historicalAnalyses.length,
+      totalBets: result.totalBets,
+    });
+
+    return {
+      providerStats: result.providerStats,
+      totalBets: result.totalBets,
+    };
   }
 }

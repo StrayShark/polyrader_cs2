@@ -270,6 +270,9 @@ const zh: Record<string, string> = {
   'simulation.equityCurves': '权益曲线',
   'simulation.noData': '暂无模拟数据',
   'simulation.noDataDesc': '启用模拟盘并运行 LLM 分析以开始收集数据',
+  'simulation.backtest': '回测',
+  'simulation.backtestResult': '回测结果',
+  'simulation.backtestTotalBets': '回测下注总数',
 
   // Decision journal
   'journal.title': '决策记录',
@@ -712,6 +715,9 @@ const en: Record<string, string> = {
   'simulation.equityCurves': 'Equity Curves',
   'simulation.noData': 'No simulation data yet',
   'simulation.noDataDesc': 'Enable paper trading and run LLM analysis to start collecting data',
+  'simulation.backtest': 'Backtest',
+  'simulation.backtestResult': 'Backtest Result',
+  'simulation.backtestTotalBets': 'Total Backtest Bets',
 
   // AI Config page
   'aiConfig.title': 'AI Config',

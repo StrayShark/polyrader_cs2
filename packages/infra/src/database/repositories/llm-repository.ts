@@ -386,6 +386,41 @@ export class LLMRepository {
   }
 
   // --- A/B variant comparison stats ---
+
+  /**
+   * Get historical LLM analyses for backtesting.
+   * Returns analyses ordered by created_at for replay.
+   */
+  getHistoricalAnalyses(limit = 500): Array<{
+    matchId: string;
+    provider: LLMProvider;
+    model: string;
+    teamAProb: number;
+    teamBProb: number;
+    confidence: number;
+    variantId: string;
+    createdAt: string;
+  }> {
+    const rows = query<Record<string, unknown>>(
+      `SELECT match_id, provider, model, team_a_prob, team_b_prob, confidence, variant_id, created_at
+       FROM llm_analyses
+       WHERE error IS NULL
+       ORDER BY created_at ASC
+       LIMIT ?`,
+      limit,
+    );
+    return rows.map((r) => ({
+      matchId: String(r.match_id),
+      provider: String(r.provider) as LLMProvider,
+      model: String(r.model),
+      teamAProb: Number(r.team_a_prob),
+      teamBProb: Number(r.team_b_prob),
+      confidence: Number(r.confidence),
+      variantId: String(r.variant_id ?? 'baseline'),
+      createdAt: String(r.created_at ?? new Date().toISOString()),
+    }));
+  }
+
   getVariantStats(variantId: string): {
     totalAnalyses: number;
     totalBets: number;

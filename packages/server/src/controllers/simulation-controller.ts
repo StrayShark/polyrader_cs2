@@ -68,4 +68,14 @@ export class SimulationController {
       res.status(500).json({ error: 'Failed to get bet history' });
     }
   }
+
+  runBacktest(_req: Request, res: Response): void {
+    try {
+      const result = this.service.runBacktest();
+      res.json({ data: result });
+    } catch (err) {
+      logger.error('Failed to run backtest', { error: (err as Error).message });
+      res.status(500).json({ error: 'Failed to run backtest' });
+    }
+  }
 }

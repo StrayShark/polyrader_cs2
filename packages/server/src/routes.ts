@@ -123,4 +123,5 @@ export function registerRoutes(app: Express): void {
   app.get('/api/simulation/equity-curves', (req, res) => simulationCtrl.getAllEquityCurves(req, res));
   app.get('/api/simulation/equity-curve/:provider', (req, res) => simulationCtrl.getEquityCurve(req, res));
   app.get('/api/simulation/bets/:provider', (req, res) => simulationCtrl.getBetHistory(req, res));
+  app.post('/api/simulation/backtest', (req, res) => simulationCtrl.runBacktest(req, res));
 }

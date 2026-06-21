@@ -1,11 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { LLMAnalysisResult, SimulatedBet } from '@polyrader/core';
 
-// Mock core — SimulatedBettingEngine constructor returns mock instance
+// Mock core — SimulatedBettingEngine and BacktestEngine constructors return mock instances
 vi.mock('@polyrader/core', () => ({
   SimulatedBettingEngine: vi.fn().mockImplementation(() => ({
     placeBetFromAnalysis: vi.fn(),
     calculateProviderStats: vi.fn(),
+  })),
+  BacktestEngine: vi.fn().mockImplementation(() => ({
+    runBacktest: vi.fn(),
   })),
 }));
 
@@ -20,7 +23,14 @@ vi.mock('@polyrader/infra', () => ({
     getBetsByProviders: vi.fn(),
     getEquityCurveByProvider: vi.fn(),
     getBetsByProvider: vi.fn(),
+    getBets: vi.fn(),
+    getHistoricalAnalyses: vi.fn(),
   })),
+}));
+
+// Mock websocket broadcast
+vi.mock('../websocket', () => ({
+  broadcast: vi.fn(),
 }));
 
 import { SimulationService } from '../services/simulation-service';

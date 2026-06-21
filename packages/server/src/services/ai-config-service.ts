@@ -362,6 +362,15 @@ export class AiConfigService {
       logger.warn('Failed to persist analysis results', { error: (err as Error).message });
     }
 
+    // Auto-place simulation bets for each LLM based on simulation config
+    try {
+      const market = await this.marketService.getMarket(matchId);
+      const marketProb = market?.outcomePrices?.[0] ? parseFloat(market.outcomePrices[0]) : 0.5;
+      this.simulationService.autoBetFromAnalysis(matchId, results, marketProb, match.teamA.name, match.teamB.name);
+    } catch (simErr) {
+      logger.warn('Simulation auto-bet failed (stream)', { error: (simErr as Error).message });
+    }
+
     await cacheSet(`analysis:${matchId}`, aggregation, 600);
     return aggregation;
   }

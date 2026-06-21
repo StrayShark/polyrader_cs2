@@ -33,6 +33,7 @@ export const ALLOWED_CHANNELS = new Set([
   'analysis',
   'alerts',
   'arbitrage',
+  'simulation',
 ]);
 
 export function isAllowedChannel(channel: string): boolean {
