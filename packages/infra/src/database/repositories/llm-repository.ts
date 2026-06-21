@@ -1,5 +1,5 @@
 import { query, queryOne } from '../connection';
-import type { LLMConfig, LLMStats, SimulatedBet, LLMProvider, PromptVariant, LLMAnalysisResult } from '@polyrader/core';
+import type { LLMConfig, LLMStats, SimulatedBet, LLMProvider, PromptVariant, LLMAnalysisResult, EquityCurvePoint } from '@polyrader/core';
 
 export class LLMRepository {
   // --- LLM Config ---
@@ -105,6 +105,36 @@ export class LLMRepository {
       `SELECT * FROM simulated_bets WHERE provider = ? ORDER BY placed_at DESC LIMIT ?`,
       provider,
       limit,
+    );
+    return rows.map(this.mapBet);
+  }
+
+  getEquityCurveByProvider(provider: LLMProvider, initialCapital: number): EquityCurvePoint[] {
+    const rows = query<Record<string, unknown>>(
+      `SELECT placed_at, profit_loss, settled_at, result FROM simulated_bets
+       WHERE provider = ? AND result != 'pending'
+       ORDER BY settled_at ASC`,
+      provider,
+    );
+    let cumulative = 0;
+    return rows.map((row) => {
+      const pnl = Number(row.profit_loss) || 0;
+      cumulative += pnl;
+      return {
+        timestamp: String(row.settled_at ?? row.placed_at),
+        cumulativePnl: Math.round(cumulative * 100) / 100,
+        equity: Math.round((initialCapital + cumulative) * 100) / 100,
+        provider,
+      };
+    });
+  }
+
+  getBetsByProviders(providers: LLMProvider[], limit = 500): SimulatedBet[] {
+    if (providers.length === 0) return [];
+    const placeholders = providers.map(() => '?').join(',');
+    const rows = query<Record<string, unknown>>(
+      `SELECT * FROM simulated_bets WHERE provider IN (${placeholders}) ORDER BY placed_at DESC LIMIT ?`,
+      ...providers, limit,
     );
     return rows.map(this.mapBet);
   }

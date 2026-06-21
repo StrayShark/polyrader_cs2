@@ -8,6 +8,7 @@ import { AiConfigController } from './controllers/ai-config-controller';
 import { AiStatsController } from './controllers/ai-stats-controller';
 import { AllocationController } from './controllers/allocation-controller';
 import { AlertController } from './controllers/alert-controller';
+import { SimulationController } from './controllers/simulation-controller';
 import { createPromptVariantRouter } from './controllers/prompt-variant-controller';
 import { LLMRepository } from '@polyrader/infra';
 import { validate } from './validation';
@@ -34,6 +35,7 @@ import {
   updateAlertBodySchema,
   alertParamsSchema,
   alertQuerySchema,
+  updateSimulationConfigSchema,
 } from './validation';
 
 export function registerRoutes(app: Express): void {
@@ -46,6 +48,7 @@ export function registerRoutes(app: Express): void {
   const aiStatsCtrl = new AiStatsController();
   const allocationCtrl = new AllocationController();
   const alertCtrl = new AlertController();
+  const simulationCtrl = new SimulationController();
 
   // Markets
   app.get('/api/markets', validate(marketQuerySchema, 'query'), (req, res) => marketCtrl.getMarkets(req, res));
@@ -112,4 +115,12 @@ export function registerRoutes(app: Express): void {
   app.post('/api/alerts', validate(createAlertBodySchema, 'body'), (req, res) => alertCtrl.createAlert(req, res));
   app.put('/api/alerts/:id', validate(alertParamsSchema, 'params'), validate(updateAlertBodySchema, 'body'), (req, res) => alertCtrl.updateAlert(req, res));
   app.delete('/api/alerts/:id', validate(alertParamsSchema, 'params'), (req, res) => alertCtrl.deleteAlert(req, res));
+
+  // Simulation (Paper Trading)
+  app.get('/api/simulation/config', (req, res) => simulationCtrl.getConfig(req, res));
+  app.put('/api/simulation/config', validate(updateSimulationConfigSchema, 'body'), (req, res) => simulationCtrl.updateConfig(req, res));
+  app.get('/api/simulation/stats', (req, res) => simulationCtrl.getProviderStats(req, res));
+  app.get('/api/simulation/equity-curves', (req, res) => simulationCtrl.getAllEquityCurves(req, res));
+  app.get('/api/simulation/equity-curve/:provider', (req, res) => simulationCtrl.getEquityCurve(req, res));
+  app.get('/api/simulation/bets/:provider', (req, res) => simulationCtrl.getBetHistory(req, res));
 }

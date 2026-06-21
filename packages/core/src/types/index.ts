@@ -495,6 +495,50 @@ export interface CalibrationPoint {
 }
 
 // ============================================================
+// Simulation Config (Paper Trading)
+// ============================================================
+
+export interface SimulationConfig {
+  id: string;
+  enabled: boolean;
+  initialCapital: number;
+  betStrategy: 'fixed' | 'kelly' | 'proportional';
+  betAmount: number;
+  maxBetFraction: number;
+  minConfidence: number;
+  minEdge: number;
+  oddsSource: 'market' | 'llm_inverse';
+  participatingProviders: LLMProvider[];
+  autoSettle: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProviderSimulationStats {
+  provider: LLMProvider;
+  totalBets: number;
+  settledBets: number;
+  wonBets: number;
+  lostBets: number;
+  pendingBets: number;
+  winRate: number;
+  totalStaked: number;
+  totalPnl: number;
+  roi: number;
+  currentEquity: number;       // initialCapital + totalPnl
+  initialCapital: number;
+  maxDrawdown: number;
+  sharpeRatio: number;
+}
+
+export interface EquityCurvePoint {
+  timestamp: string;
+  cumulativePnl: number;
+  equity: number;
+  provider: LLMProvider;
+}
+
+// ============================================================
 // Signals
 // ============================================================
 

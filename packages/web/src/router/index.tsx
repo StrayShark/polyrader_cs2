@@ -14,6 +14,7 @@ const AiConfigPage = lazy(() => import('../pages/ai-config-page').then((m) => ({
 const AiStatsPage = lazy(() => import('../pages/ai-stats-page').then((m) => ({ default: m.AiStatsPage })));
 const PromptVariantsPage = lazy(() => import('../pages/prompt-variants-page').then((m) => ({ default: m.PromptVariantsPage })));
 const AllocationPage = lazy(() => import('../pages/allocation-page').then((m) => ({ default: m.AllocationPage })));
+const SimulationPage = lazy(() => import('../pages/simulation-page').then((m) => ({ default: m.SimulationPage })));
 const NotFoundPage = lazy(() => import('../pages/not-found-page').then((m) => ({ default: m.NotFoundPage })));
 
 function PageLoader() {
@@ -51,6 +52,7 @@ export const router = createHashRouter([
       { path: 'ai/stats', element: withSuspense(AiStatsPage) },
       { path: 'prompt-variants', element: withSuspense(PromptVariantsPage) },
       { path: 'allocation', element: withSuspense(AllocationPage) },
+      { path: 'simulation', element: withSuspense(SimulationPage) },
       { path: '*', element: withSuspense(NotFoundPage) },
     ],
   },

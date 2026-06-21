@@ -44,6 +44,7 @@ const navigation = [
       { to: '/ai/stats', icon: BarChart3, labelKey: 'nav.aiStats' },
       { to: '/prompt-variants', icon: FlaskConical, labelKey: 'nav.promptVariants' },
       { to: '/allocation', icon: Wallet, labelKey: 'nav.allocation' },
+      { to: '/simulation', icon: FlaskConical, labelKey: 'nav.simulation' },
     ],
   },
 ];

@@ -194,3 +194,20 @@ export type CreateVariantBody = z.infer<typeof createVariantSchema>;
 export type UpdateVariantBody = z.infer<typeof updateVariantSchema>;
 export type CreateAlertBody = z.infer<typeof createAlertBodySchema>;
 export type UpdateAlertBody = z.infer<typeof updateAlertBodySchema>;
+
+// ============================================================
+// Simulation Config
+// ============================================================
+
+export const updateSimulationConfigSchema = z.object({
+  enabled: z.boolean().optional(),
+  initialCapital: z.number().min(100).max(10000000).optional(),
+  betStrategy: z.enum(['fixed', 'kelly', 'proportional']).optional(),
+  betAmount: z.number().min(1).max(1000000).optional(),
+  maxBetFraction: z.number().min(0.001).max(1).optional(),
+  minConfidence: z.number().min(0).max(1).optional(),
+  minEdge: z.number().min(0).max(1).optional(),
+  oddsSource: z.enum(['market', 'llm_inverse']).optional(),
+  participatingProviders: z.array(z.string()).optional(),
+  autoSettle: z.boolean().optional(),
+});

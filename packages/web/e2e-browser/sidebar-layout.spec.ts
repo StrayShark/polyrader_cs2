@@ -72,12 +72,12 @@ test.describe('Sidebar content visibility (desktop)', () => {
     );
   });
 
-  test('all 9 navigation links have non-empty text', async ({ page }) => {
+  test('all 10 navigation links have non-empty text', async ({ page }) => {
     await gotoWithSidebar(page);
     const navLinks = page.locator('aside nav a');
-    await expect(navLinks).toHaveCount(9);
+    await expect(navLinks).toHaveCount(10);
     const texts = await navLinks.allTextContents();
-    expect(texts.length).toBe(9);
+    expect(texts.length).toBe(10);
     for (const text of texts) {
       expect(text.trim().length).toBeGreaterThan(0);
     }

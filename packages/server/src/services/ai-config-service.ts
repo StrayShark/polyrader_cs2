@@ -5,6 +5,8 @@ import { LLMClientFactory, LLMRepository, CircuitBreakerLLMClient } from '@polyr
 import { cacheGet, cacheSet } from '@polyrader/infra';
 import { logger } from '../utils/logger';
 import { buildFallbackTeam, parseJsonField } from './match-helpers';
+import { SimulationService } from './simulation-service';
+import { MarketService } from './market-service';
 
 export class AiConfigService {
   private llmRepo = new LLMRepository();
@@ -12,6 +14,8 @@ export class AiConfigService {
   private resultAggregator = new ResultAggregator();
   private keyManager: KeyManager | null = null;
   private circuitBreakers = new Map<string, CircuitBreakerLLMClient>();
+  private simulationService = new SimulationService();
+  private marketService = new MarketService();
 
   // In-flight analysis dedup: prevents duplicate LLM calls for the same matchId
   private inflightAnalyses = new Map<string, Promise<LLMAggregation>>();
@@ -231,6 +235,17 @@ export class AiConfigService {
       }
     } catch (err) {
       logger.warn('Failed to persist analysis results', { error: (err as Error).message });
+    }
+
+    // Auto-place simulation bets for each LLM based on simulation config
+    try {
+      const market = await this.marketService.getMarket(matchId);
+      const marketProb = market?.outcomePrices?.[0] ? parseFloat(market.outcomePrices[0]) : 0.5;
+      const teamAName = match.teamA.name;
+      const teamBName = match.teamB.name;
+      this.simulationService.autoBetFromAnalysis(matchId, analysisResults, marketProb, teamAName, teamBName);
+    } catch (simErr) {
+      logger.warn('Simulation auto-bet failed', { error: (simErr as Error).message });
     }
 
     // Cache result

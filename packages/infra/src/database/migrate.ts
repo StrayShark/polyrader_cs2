@@ -17,7 +17,7 @@ export function runMigrations(): void {
     )
   `);
 
-  const migrations = ['001_initial_schema.sql', '002_add_clob_token_ids.sql', '003_add_bet_allocation.sql', '004_add_risk_metrics.sql', '005_add_prompt_ab_testing.sql', '006_add_decision_journal.sql', '007_add_alerts.sql'];
+  const migrations = ['001_initial_schema.sql', '002_add_clob_token_ids.sql', '003_add_bet_allocation.sql', '004_add_risk_metrics.sql', '005_add_prompt_ab_testing.sql', '006_add_decision_journal.sql', '007_add_alerts.sql', '008_add_simulation_config.sql'];
 
   for (const name of migrations) {
     const row = db

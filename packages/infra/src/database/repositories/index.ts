@@ -3,3 +3,4 @@ export * from './whale-repository';
 export * from './llm-repository';
 export * from './allocation-repository';
 export * from './alert-repository';
+export * from './simulation-repository';
