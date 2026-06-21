@@ -7,6 +7,7 @@ import { SignalController } from './controllers/signal-controller';
 import { AiConfigController } from './controllers/ai-config-controller';
 import { AiStatsController } from './controllers/ai-stats-controller';
 import { AllocationController } from './controllers/allocation-controller';
+import { AlertController } from './controllers/alert-controller';
 import { createPromptVariantRouter } from './controllers/prompt-variant-controller';
 import { LLMRepository } from '@polyrader/infra';
 import { validate } from './validation';
@@ -29,6 +30,10 @@ import {
   updateBankrollBodySchema,
   createAllocationBodySchema,
   allocationHistoryQuerySchema,
+  createAlertBodySchema,
+  updateAlertBodySchema,
+  alertParamsSchema,
+  alertQuerySchema,
 } from './validation';
 
 export function registerRoutes(app: Express): void {
@@ -40,6 +45,7 @@ export function registerRoutes(app: Express): void {
   const aiConfigCtrl = new AiConfigController();
   const aiStatsCtrl = new AiStatsController();
   const allocationCtrl = new AllocationController();
+  const alertCtrl = new AlertController();
 
   // Markets
   app.get('/api/markets', validate(marketQuerySchema, 'query'), (req, res) => marketCtrl.getMarkets(req, res));
@@ -53,6 +59,7 @@ export function registerRoutes(app: Express): void {
 
   // Whales
   app.get('/api/whales', validate(whaleQuerySchema, 'query'), (req, res) => whaleCtrl.getWhales(req, res));
+  app.get('/api/whales/graph', (req, res) => whaleCtrl.getAddressGraph(req, res));
   app.get('/api/whales/:address', validate(whaleParamsSchema, 'params'), (req, res) => whaleCtrl.getWhale(req, res));
 
   // Esports
@@ -65,6 +72,7 @@ export function registerRoutes(app: Express): void {
   // Signals
   app.get('/api/signals/top', (req, res) => signalCtrl.getTopSignals(req, res));
   app.get('/api/signals/stats', (req, res) => signalCtrl.getStats(req, res));
+  app.get('/api/signals/arbitrage', (req, res) => signalCtrl.getArbitrage(req, res));
   app.get('/api/signals/:marketId', validate(signalParamsSchema, 'params'), (req, res) => signalCtrl.getSignals(req, res));
 
   // AI Analysis
@@ -98,4 +106,10 @@ export function registerRoutes(app: Express): void {
   // Prompt Variants (A/B testing)
   const llmRepo = new LLMRepository();
   app.use('/api/ai/prompts', createPromptVariantRouter(llmRepo));
+
+  // Price/Volume Alerts
+  app.get('/api/alerts', validate(alertQuerySchema, 'query'), (req, res) => alertCtrl.getAlerts(req, res));
+  app.post('/api/alerts', validate(createAlertBodySchema, 'body'), (req, res) => alertCtrl.createAlert(req, res));
+  app.put('/api/alerts/:id', validate(alertParamsSchema, 'params'), validate(updateAlertBodySchema, 'body'), (req, res) => alertCtrl.updateAlert(req, res));
+  app.delete('/api/alerts/:id', validate(alertParamsSchema, 'params'), (req, res) => alertCtrl.deleteAlert(req, res));
 }

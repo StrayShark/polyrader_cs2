@@ -158,6 +158,30 @@ export const abCompareQuerySchema = z.object({
 });
 
 // ============================================================
+// Alert schemas
+// ============================================================
+export const createAlertBodySchema = z.object({
+  marketSlug: z.string().min(1, 'marketSlug is required'),
+  marketQuestion: z.string().min(1, 'marketQuestion is required'),
+  alertType: z.enum(['price_above', 'price_below', 'volume_above']),
+  threshold: z.number().min(0),
+});
+
+export const updateAlertBodySchema = z.object({
+  threshold: z.number().min(0).optional(),
+  currentValue: z.number().min(0).optional(),
+  triggered: z.boolean().optional(),
+});
+
+export const alertParamsSchema = z.object({
+  id: z.string().min(1, 'id is required'),
+});
+
+export const alertQuerySchema = z.object({
+  triggered: z.enum(['true', 'false']).optional(),
+});
+
+// ============================================================
 // Type exports
 // ============================================================
 export type MarketQuery = z.infer<typeof marketQuerySchema>;
@@ -168,3 +192,5 @@ export type UpdateBankrollBody = z.infer<typeof updateBankrollBodySchema>;
 export type CreateAllocationBody = z.infer<typeof createAllocationBodySchema>;
 export type CreateVariantBody = z.infer<typeof createVariantSchema>;
 export type UpdateVariantBody = z.infer<typeof updateVariantSchema>;
+export type CreateAlertBody = z.infer<typeof createAlertBodySchema>;
+export type UpdateAlertBody = z.infer<typeof updateAlertBodySchema>;

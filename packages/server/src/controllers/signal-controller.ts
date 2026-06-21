@@ -34,4 +34,14 @@ export class SignalController {
       res.status(500).json({ error: 'Failed to fetch signal stats', message: process.env.NODE_ENV === 'development' ? (err as Error).message : undefined });
     }
   }
+
+  async getArbitrage(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.service.getArbitrageOpportunities();
+      res.json({ data: result });
+    } catch (err) {
+      logger.error('Failed to fetch arbitrage opportunities', { error: (err as Error).message, requestId: req.headers['x-request-id'] });
+      res.status(500).json({ error: 'Failed to fetch arbitrage opportunities', message: process.env.NODE_ENV === 'development' ? (err as Error).message : undefined });
+    }
+  }
 }

@@ -29,4 +29,14 @@ export class WhaleController {
       res.status(500).json({ error: 'Failed to fetch whale', message: process.env.NODE_ENV === 'development' ? (err as Error).message : undefined });
     }
   }
+
+  async getAddressGraph(req: Request, res: Response): Promise<void> {
+    try {
+      const graph = await this.service.getAddressGraph();
+      res.json({ data: graph });
+    } catch (err) {
+      logger.error('Failed to fetch whale address graph', { error: (err as Error).message, requestId: req.headers['x-request-id'] });
+      res.status(500).json({ error: 'Failed to fetch address graph', message: process.env.NODE_ENV === 'development' ? (err as Error).message : undefined });
+    }
+  }
 }

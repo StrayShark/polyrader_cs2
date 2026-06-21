@@ -66,6 +66,20 @@ const zh: Record<string, string> = {
   'whales.pnl': '盈亏',
   'whales.suspicious': '可疑度',
 
+  // Address graph
+  'addressGraph.title': '地址关联图谱',
+  'addressGraph.subtitle': '巨鲸地址间的资金流转关系（买方 → 卖方）',
+  'addressGraph.empty': '暂无关联数据。当巨鲸地址在同一市场产生买卖交互后将显示关联图谱。',
+  'addressGraph.loading': '图谱加载中...',
+  'addressGraph.nodeCount': '{count} 个节点',
+  'addressGraph.linkCount': '{count} 条连接',
+  'addressGraph.address': '地址',
+  'addressGraph.volume': '交易量',
+  'addressGraph.tradeCount': '交易次数',
+  'addressGraph.legend.buyer': '买方',
+  'addressGraph.legend.seller': '卖方',
+  'addressGraph.legend.mixed': '混合',
+
   // Daily page
   'daily.title': '每日看板',
   'daily.subtitle': '今日比赛推荐与关注度分析',
@@ -107,6 +121,32 @@ const zh: Record<string, string> = {
   'signals.empty': '信号对比数据将在市场数据和模型预测就绪后自动生成',
   'signals.arbitrage': '套利',
   'signals.arbitrageOpportunity': '套利机会',
+
+  // Price Alerts
+  'alert.title': '价格告警',
+  'alert.create': '创建告警',
+  'alert.createTitle': '创建价格告警',
+  'alert.selectMarket': '选择市场',
+  'alert.selectMarketPlaceholder': '请选择市场...',
+  'alert.type': '告警类型',
+  'alert.typePriceAbove': '价格突破',
+  'alert.typePriceBelow': '价格跌破',
+  'alert.typeVolumeAbove': '成交量突破',
+  'alert.threshold': '阈值',
+  'alert.currentValue': '当前值',
+  'alert.triggered': '已触发',
+  'alert.monitoring': '监控中',
+  'alert.action': '操作',
+  'alert.empty': '暂无告警。点击"创建告警"添加价格/成交量监控。',
+
+  // Arbitrage
+  'arbitrage.title': '套利机会',
+  'arbitrage.empty': '暂无套利机会',
+  'arbitrage.type': '类型',
+  'arbitrage.profitPct': '利润率',
+  'arbitrage.details': '详情',
+  'arbitrage.yesNoSpread': 'Yes/No 价差',
+  'arbitrage.crossMarketSpread': '跨市场价差',
 
   // AI Stats page
   'aiStats.title': 'AI 胜率统计',
@@ -398,6 +438,23 @@ const en: Record<string, string> = {
   'dashboard.liquidity': 'Liquidity',
   'dashboard.price': 'Price',
 
+  // Connection status
+  'connectionStatus.connected': 'Connected',
+  'connectionStatus.connecting': 'Connecting',
+  'connectionStatus.disconnected': 'Disconnected·Reconnecting',
+
+  // Market heatmap
+  'heatmap.title': 'Market Heatmap',
+  'heatmap.subtitle': 'Market activity by tournament tier and volume',
+  'heatmap.price': 'Price',
+  'heatmap.volume24h': '24h Volume',
+  'heatmap.markets': 'markets',
+  'heatmap.tier.S': 'S-Tier',
+  'heatmap.tier.A': 'A-Tier',
+  'heatmap.tier.B': 'B-Tier',
+  'heatmap.tier.Tier': 'Tier',
+  'heatmap.empty': 'No market data',
+
   // Whales page
   'whales.title': 'Whale Tracking',
   'whales.subtitle': 'Large address behavior monitoring and suspicious activity analysis',
@@ -412,6 +469,20 @@ const en: Record<string, string> = {
   'whales.winRate': 'Win Rate',
   'whales.pnl': 'PnL',
   'whales.suspicious': 'Suspicious',
+
+  // Address graph
+  'addressGraph.title': 'Address Association Graph',
+  'addressGraph.subtitle': 'Fund flow relationships between whale addresses (buyer → seller)',
+  'addressGraph.empty': 'No association data. The graph will appear once whale addresses interact on the same market.',
+  'addressGraph.loading': 'Loading graph...',
+  'addressGraph.nodeCount': '{count} nodes',
+  'addressGraph.linkCount': '{count} links',
+  'addressGraph.address': 'Address',
+  'addressGraph.volume': 'Volume',
+  'addressGraph.tradeCount': 'Trades',
+  'addressGraph.legend.buyer': 'Buyer',
+  'addressGraph.legend.seller': 'Seller',
+  'addressGraph.legend.mixed': 'Mixed',
 
   // Daily page
   'daily.title': 'Daily Dashboard',
@@ -454,6 +525,32 @@ const en: Record<string, string> = {
   'signals.empty': 'Signal comparison data will be generated when market data and model predictions are ready',
   'signals.arbitrage': 'Arb',
   'signals.arbitrageOpportunity': 'Arbitrage Opportunity',
+
+  // Price Alerts
+  'alert.title': 'Price Alerts',
+  'alert.create': 'Create Alert',
+  'alert.createTitle': 'Create Price Alert',
+  'alert.selectMarket': 'Select Market',
+  'alert.selectMarketPlaceholder': 'Select a market...',
+  'alert.type': 'Alert Type',
+  'alert.typePriceAbove': 'Price Above',
+  'alert.typePriceBelow': 'Price Below',
+  'alert.typeVolumeAbove': 'Volume Above',
+  'alert.threshold': 'Threshold',
+  'alert.currentValue': 'Current Value',
+  'alert.triggered': 'Triggered',
+  'alert.monitoring': 'Monitoring',
+  'alert.action': 'Action',
+  'alert.empty': 'No alerts. Click "Create Alert" to add price/volume monitoring.',
+
+  // Arbitrage
+  'arbitrage.title': 'Arbitrage Opportunities',
+  'arbitrage.empty': 'No arbitrage opportunities',
+  'arbitrage.type': 'Type',
+  'arbitrage.profitPct': 'Profit %',
+  'arbitrage.details': 'Details',
+  'arbitrage.yesNoSpread': 'Yes/No Spread',
+  'arbitrage.crossMarketSpread': 'Cross-Market Spread',
 
   // AI Stats page
   'aiStats.title': 'AI Win Rate Stats',

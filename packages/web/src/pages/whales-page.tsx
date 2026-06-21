@@ -1,12 +1,15 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Fish, AlertTriangle, TrendingUp, RefreshCw } from 'lucide-react';
 import { useWhaleStore } from '../stores/whale-store';
 import { DataState } from '../components/DataState';
 import { StatsSkeleton, TableSkeleton } from '../components/Skeletons';
 import { VirtualList } from '../components/VirtualList';
+import { AddressGraph as AddressGraphView } from '../components/address-graph';
 import { useWebSocket } from '../hooks/use-websocket';
 import { useI18n } from '../hooks/use-i18n';
 import { Card, CardHeader, CardTitle, Badge, Button, Progress } from '@/components/ui';
+import type { AddressGraph as AddressGraphData } from '@polyrader/core';
+import { getAddressGraph } from '../utils/api';
 
 // Grid template for 6 columns matching the table layout
 const GRID = 'grid grid-cols-6 gap-0 px-6 py-3 text-sm items-center';
@@ -26,6 +29,28 @@ export function WhalesPage() {
       fetchWhales();
     });
   }, [subscribe, fetchWhales]);
+
+  // Address association graph
+  const [graph, setGraph] = useState<AddressGraphData | null>(null);
+  const [graphLoading, setGraphLoading] = useState(false);
+  const [graphError, setGraphError] = useState<string | null>(null);
+
+  const fetchGraph = useCallback(async () => {
+    setGraphLoading(true);
+    setGraphError(null);
+    try {
+      const data = await getAddressGraph();
+      setGraph(data);
+    } catch (err) {
+      setGraphError((err as Error).message);
+    } finally {
+      setGraphLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchGraph();
+  }, [fetchGraph]);
 
   const highRiskCount = whales.filter((w) => w.suspiciousScore.total >= 50).length;
   const totalVolume = whales.reduce((s, w) => s + w.totalVolume, 0);
@@ -129,6 +154,36 @@ export function WhalesPage() {
           )}
         </Card>
       </DataState>
+
+      <Card>
+        <CardHeader className="h-auto flex flex-row items-center justify-between space-y-0 border-b px-6 py-3">
+          <div>
+            <CardTitle>{t('addressGraph.title')}</CardTitle>
+            <p className="mt-1 text-xs text-muted-foreground">{t('addressGraph.subtitle')}</p>
+          </div>
+          {graph && (
+            <span className="text-xs text-muted-foreground">
+              {t('addressGraph.nodeCount', { count: graph.nodes.length })} · {t('addressGraph.linkCount', { count: graph.links.length })}
+            </span>
+          )}
+        </CardHeader>
+        <div className="p-2">
+          {graphLoading ? (
+            <div className="flex items-center justify-center text-sm text-muted-foreground" style={{ height: 460 }}>
+              {t('addressGraph.loading')}
+            </div>
+          ) : graphError ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-8 text-sm text-muted-foreground" style={{ height: 460 }}>
+              <span>{graphError}</span>
+              <Button variant="outline" size="sm" onClick={fetchGraph}>
+                {t('common.retry')}
+              </Button>
+            </div>
+          ) : graph ? (
+            <AddressGraphView graph={graph} />
+          ) : null}
+        </div>
+      </Card>
     </div>
   );
 }

@@ -5,6 +5,15 @@ type MessageHandler = (data: unknown) => void;
 
 export type ConnectionState = 'connecting' | 'connected' | 'disconnected' | 'reconnecting';
 
+/** Simplified 3-state status exposed to UI components. */
+export type WsStatus = 'connected' | 'connecting' | 'disconnected';
+
+function toWsStatus(state: ConnectionState): WsStatus {
+  if (state === 'connected') return 'connected';
+  if (state === 'disconnected') return 'disconnected';
+  return 'connecting'; // connecting + reconnecting → connecting
+}
+
 export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null);
   const handlersRef = useRef<Map<string, Set<MessageHandler>>>(new Map());
@@ -122,5 +131,7 @@ export function useWebSocket() {
     }
   }, []);
 
-  return { connectionState, latency, lastEvent, subscribe, send };
+  const wsStatus = toWsStatus(connectionState);
+
+  return { connectionState, wsStatus, latency, lastEvent, subscribe, send };
 }

@@ -6,6 +6,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 vi.mock('../hooks/use-websocket', () => ({
   useWebSocket: () => ({
     connectionState: 'connected',
+    wsStatus: 'connected' as const,
     latency: 10,
     lastEvent: null,
     subscribe: () => () => {},

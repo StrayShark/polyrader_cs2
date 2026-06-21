@@ -1,4 +1,5 @@
 import { getApiBase } from './tauri-bridge';
+import type { AddressGraph } from '@polyrader/core';
 
 let apiBasePromise: Promise<string> | null = null;
 
@@ -39,3 +40,8 @@ export const api = {
     request<T>(path, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
 };
+
+export async function getAddressGraph(): Promise<AddressGraph> {
+  const { data } = await api.get<{ data: AddressGraph }>('/whales/graph');
+  return data;
+}

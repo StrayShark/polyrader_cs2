@@ -345,6 +345,38 @@ export interface CorrelationData {
 }
 
 // ============================================================
+// Address Association Graph
+// ============================================================
+
+/** A node in the address association graph (a whale address). */
+export interface AddressGraphNode {
+  /** Address identifier */
+  id: string;
+  /** Human-readable label (address alias or truncated address) */
+  label: string;
+  /** Total trading volume of the address */
+  volume: number;
+  /** Number of trades associated with the address */
+  tradeCount: number;
+}
+
+/** A directed link between two addresses representing fund flow. */
+export interface AddressGraphLink {
+  /** Source address id (the buyer) */
+  source: string;
+  /** Target address id (the seller) */
+  target: string;
+  /** Aggregate trade value flowing along this edge */
+  value: number;
+}
+
+/** Address association graph returned by the whale graph endpoint. */
+export interface AddressGraph {
+  nodes: AddressGraphNode[];
+  links: AddressGraphLink[];
+}
+
+// ============================================================
 // Daily Dashboard
 // ============================================================
 

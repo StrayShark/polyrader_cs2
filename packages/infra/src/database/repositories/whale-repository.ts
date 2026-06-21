@@ -1,5 +1,5 @@
 import { query, queryOne, getDb } from '../connection';
-import type { Whale, WhaleTrade, CorrelationData } from '@polyrader/core';
+import type { Whale, WhaleTrade, CorrelationData, AddressGraph } from '@polyrader/core';
 
 export class WhaleRepository {
   findAll(limit = 50): Whale[] {
@@ -144,6 +144,84 @@ export class WhaleRepository {
     );
     // changes === 0 means the INSERT OR IGNORE was a no-op (duplicate tx_hash)
     return result.changes > 0;
+  }
+
+  /**
+   * Build an address association graph: find address pairs where one address
+   * bought an outcome while another sold the same outcome on the same market.
+   * Returns nodes (addresses) sorted by volume desc (max 50) and links (max 100).
+   */
+  getAddressGraph(): AddressGraph {
+    // Find interacting address pairs (buyer vs seller on the same market + outcome)
+    const linkRows = query<{ buyer: string; seller: string; value: number }>(
+      `SELECT buyer.address AS buyer,
+              seller.address AS seller,
+              SUM(buyer.amount) AS value
+       FROM whale_trades buyer
+       JOIN whale_trades seller
+         ON buyer.market_id = seller.market_id
+        AND buyer.outcome = seller.outcome
+        AND buyer.address != seller.address
+        AND buyer.type = 'buy'
+        AND seller.type = 'sell'
+       GROUP BY buyer.address, seller.address`,
+    );
+
+    if (linkRows.length === 0) {
+      return { nodes: [], links: [] };
+    }
+
+    // Collect every address that participates in at least one interaction
+    const interactingIds = new Set<string>();
+    for (const row of linkRows) {
+      interactingIds.add(row.buyer);
+      interactingIds.add(row.seller);
+    }
+
+    // Aggregate per-address volume and trade count for interacting addresses
+    const placeholders = Array.from(interactingIds).map(() => '?').join(',');
+    const nodeRows = query<{ address: string; label: string | null; volume: number; trade_count: number }>(
+      `SELECT wt.address,
+              w.label,
+              SUM(wt.amount) AS volume,
+              COUNT(*) AS trade_count
+       FROM whale_trades wt
+       LEFT JOIN whales w ON w.address = wt.address
+       WHERE wt.address IN (${placeholders})
+       GROUP BY wt.address`,
+      ...interactingIds,
+    );
+
+    const nodeMap = new Map<string, { id: string; label: string; volume: number; tradeCount: number }>();
+    for (const row of nodeRows) {
+      const volume = Number.isFinite(row.volume) ? row.volume : 0;
+      const tradeCount = Number.isFinite(row.trade_count) ? row.trade_count : 0;
+      nodeMap.set(row.address, {
+        id: row.address,
+        label: row.label ?? `${row.address.slice(0, 6)}...${row.address.slice(-4)}`,
+        volume,
+        tradeCount,
+      });
+    }
+
+    // Nodes sorted by volume desc, limited to 50
+    const nodes = Array.from(nodeMap.values())
+      .sort((a, b) => b.volume - a.volume)
+      .slice(0, 50);
+    const topNodeIds = new Set(nodes.map((n) => n.id));
+
+    // Links filtered to top nodes, sorted by value desc, limited to 100
+    const links = linkRows
+      .map((row) => ({
+        source: row.buyer,
+        target: row.seller,
+        value: Number.isFinite(row.value) ? row.value : 0,
+      }))
+      .filter((l) => topNodeIds.has(l.source) && topNodeIds.has(l.target))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 100);
+
+    return { nodes, links };
   }
 
   private mapRow(row: Record<string, unknown>): Whale {

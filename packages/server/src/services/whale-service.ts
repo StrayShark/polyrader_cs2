@@ -1,4 +1,4 @@
-import type { Whale } from '@polyrader/core';
+import type { Whale, AddressGraph } from '@polyrader/core';
 import { WhaleScoringEngine } from '@polyrader/core';
 import { WhaleRepository } from '@polyrader/infra';
 import { cacheGet, cacheSet } from '@polyrader/infra';
@@ -46,5 +46,15 @@ export class WhaleService {
       await cacheSet(cacheKey, whale, 120);
     }
     return whale;
+  }
+
+  async getAddressGraph(): Promise<AddressGraph> {
+    const cacheKey = 'whales:graph';
+    const cached = await cacheGet<AddressGraph>(cacheKey);
+    if (cached) return cached;
+
+    const graph = this.whaleRepo.getAddressGraph();
+    await cacheSet(cacheKey, graph, 120);
+    return graph;
   }
 }

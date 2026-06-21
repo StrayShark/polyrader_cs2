@@ -4,6 +4,7 @@ import { BarChart3, TrendingUp, DollarSign, Activity, RefreshCw, Brain } from 'l
 import { useMarketStore } from '../stores/market-store';
 import { api } from '../utils/api';
 import { DataState } from '../components/DataState';
+import { MarketHeatmap } from '../components/market-heatmap';
 import { StatsSkeleton, TableSkeleton } from '../components/Skeletons';
 import { useWebSocket } from '../hooks/use-websocket';
 import { useI18n } from '../hooks/use-i18n';
@@ -107,6 +108,11 @@ export function DashboardPage() {
           </Card>
         ))}
       </div>
+      )}
+
+      {/* Market Heatmap */}
+      {!isLoading && safeMarkets.length > 0 && (
+        <MarketHeatmap markets={safeMarkets} />
       )}
 
       {/* Top Deviations */}

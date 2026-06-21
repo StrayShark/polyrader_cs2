@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Activity, TrendingUp, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Activity, TrendingUp, AlertTriangle, RefreshCw, GitCompare } from 'lucide-react';
 import { api } from '../utils/api';
 import { DataState } from '../components/DataState';
 import { StatsSkeleton, TableSkeleton } from '../components/Skeletons';
+import { AlertManager } from '../components/alert-manager';
 import { Card, CardHeader, CardTitle, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Button } from '@/components/ui';
 import { useI18n } from '../hooks/use-i18n';
 import type { SignalComparison } from '@polyrader/core';
@@ -13,10 +14,19 @@ interface SignalStats {
   totalPredictions: number;
 }
 
+interface ArbitrageOpportunity {
+  marketSlug: string;
+  question: string;
+  type: 'yes_no_spread' | 'cross_market_spread';
+  profitPct: number;
+  details: string;
+}
+
 export function SignalsPage() {
   const { t } = useI18n();
   const [signals, setSignals] = useState<SignalComparison[]>([]);
   const [stats, setStats] = useState<SignalStats>({ accuracy: 0, brierScore: 0, totalPredictions: 0 });
+  const [arbitrageOps, setArbitrageOps] = useState<ArbitrageOpportunity[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,12 +34,14 @@ export function SignalsPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const [signalsRes, statsRes] = await Promise.all([
+      const [signalsRes, statsRes, arbRes] = await Promise.all([
         api.get<{ data: SignalComparison[] }>('/signals/top'),
         api.get<{ data: SignalStats }>('/signals/stats'),
+        api.get<{ data: { opportunities: ArbitrageOpportunity[] } }>('/signals/arbitrage'),
       ]);
       setSignals(Array.isArray(signalsRes.data) ? signalsRes.data : []);
       setStats(statsRes.data ?? { accuracy: 0, brierScore: 0, totalPredictions: 0 });
+      setArbitrageOps(arbRes.data?.opportunities ?? []);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -134,6 +146,55 @@ export function SignalsPage() {
         )}
       </Card>
       </DataState>
+
+      {/* Arbitrage Opportunities */}
+      <Card>
+        <CardHeader className="border-b px-6 py-3">
+          <div className="flex items-center gap-2">
+            <GitCompare className="h-4 w-4 text-muted-foreground" />
+            <CardTitle>{t('arbitrage.title')}</CardTitle>
+          </div>
+        </CardHeader>
+        {arbitrageOps.length === 0 ? (
+          <div className="p-6 text-center text-sm text-muted-foreground">
+            {t('arbitrage.empty')}
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="h-auto px-6 py-2 text-left">{t('common.market')}</TableHead>
+                <TableHead className="h-auto px-6 py-2 text-left">{t('arbitrage.type')}</TableHead>
+                <TableHead className="h-auto px-6 py-2 text-right">{t('arbitrage.profitPct')}</TableHead>
+                <TableHead className="h-auto px-6 py-2 text-left">{t('arbitrage.details')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {arbitrageOps.map((op, i) => (
+                <TableRow key={i} className="text-sm">
+                  <TableCell className="px-6 py-3 font-medium max-w-xs truncate" title={op.question}>
+                    {op.question}
+                  </TableCell>
+                  <TableCell className="px-6 py-3">
+                    <Badge variant={op.type === 'yes_no_spread' ? 'cyan' : 'purple'}>
+                      {op.type === 'yes_no_spread' ? t('arbitrage.yesNoSpread') : t('arbitrage.crossMarketSpread')}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="px-6 py-3 text-right tabular-nums">
+                    <span className={op.profitPct > 2 ? 'text-green font-medium' : ''}>
+                      {op.profitPct.toFixed(2)}%
+                    </span>
+                  </TableCell>
+                  <TableCell className="px-6 py-3 text-xs text-muted-foreground">{op.details}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </Card>
+
+      {/* Price Alerts */}
+      <AlertManager />
     </div>
   );
 }
