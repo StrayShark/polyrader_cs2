@@ -43,7 +43,7 @@
     ],
     "createUpdaterArtifacts": true,
     "resources": [
-      "../packages/server/dist/polyrader-server"
+      "../packages/server/dist/polyrader-server*"
     ]
   },
   "plugins": {

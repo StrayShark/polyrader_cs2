@@ -93,11 +93,36 @@ jobs:
       - name: Verify server binary
         shell: bash
         run: |
-          if [ ! -f packages/server/dist/polyrader-server ]; then
+          if [ ! -f packages/server/dist/polyrader-server ] && [ ! -f packages/server/dist/polyrader-server.exe ]; then
             echo "ERROR: Server binary not found!"
+            ls -la packages/server/dist/ || true
             exit 1
           fi
-          echo "Server binary size: $(du -h packages/server/dist/polyrader-server | cut -f1)"
+          echo "Server binary size: $(du -h packages/server/dist/polyrader-server* | cut -f1)"
+
+      # Disable updater signing if no signing key is configured
+      - name: Configure updater signing
+        shell: bash
+        run: |
+          if [ -z "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" ]; then
+            echo "No TAURI_SIGNING_PRIVATE_KEY secret found, disabling updater artifacts"
+            if command -v jq &>/dev/null; then
+              jq '.bundle.createUpdaterArtifacts = false' src-tauri/tauri.conf.json > src-tauri/tauri.conf.json.tmp
+              mv src-tauri/tauri.conf.json.tmp src-tauri/tauri.conf.json
+            else
+              # Windows Git Bash may not have jq — use node
+              node -e "
+                const fs = require('fs');
+                const p = 'src-tauri/tauri.conf.json';
+                const c = JSON.parse(fs.readFileSync(p, 'utf8'));
+                c.bundle.createUpdaterArtifacts = false;
+                fs.writeFileSync(p, JSON.stringify(c, null, 2));
+              "
+            fi
+            echo "Updater artifacts disabled"
+          else
+            echo "TAURI_SIGNING_PRIVATE_KEY found, keeping updater artifacts enabled"
+          fi
 
       # Build Tauri app with updater signature
       - uses: tauri-apps/tauri-action@v0
