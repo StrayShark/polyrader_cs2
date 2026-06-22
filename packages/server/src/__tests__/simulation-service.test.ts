@@ -190,9 +190,9 @@ describe('SimulationService', () => {
 
       const result = service.getProviderStats();
 
-      // Default providers: openai, anthropic, google, deepseek, xai, groq (6)
-      expect(result).toHaveLength(6);
-      expect(bettingEngine.calculateProviderStats).toHaveBeenCalledTimes(6);
+      // Default providers: openai, anthropic, google, deepseek, xai, groq, qwen, moonshot, zhipu, doubao, minimax, hunyuan (12)
+      expect(result).toHaveLength(12);
+      expect(bettingEngine.calculateProviderStats).toHaveBeenCalledTimes(12);
     });
 
     it('returns stats only for participating providers', () => {
@@ -241,10 +241,10 @@ describe('SimulationService', () => {
 
       const result = service.getAllEquityCurves();
 
-      // 6 default providers
-      expect(Object.keys(result)).toHaveLength(6);
+      // 12 default providers
+      expect(Object.keys(result)).toHaveLength(12);
       expect(result.openai).toEqual(mockCurve);
-      expect(llmRepo.getEquityCurveByProvider).toHaveBeenCalledTimes(6);
+      expect(llmRepo.getEquityCurveByProvider).toHaveBeenCalledTimes(12);
     });
   });
 

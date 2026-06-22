@@ -247,7 +247,7 @@ export interface BetRecommendation {
 // LLM Analysis
 // ============================================================
 
-export type LLMProvider = 'openai' | 'anthropic' | 'google' | 'deepseek' | 'xai' | 'groq' | 'user';
+export type LLMProvider = 'openai' | 'anthropic' | 'google' | 'deepseek' | 'xai' | 'groq' | 'qwen' | 'moonshot' | 'zhipu' | 'doubao' | 'minimax' | 'hunyuan' | 'user';
 
 export interface LLMAnalysisResult {
   provider: LLMProvider;

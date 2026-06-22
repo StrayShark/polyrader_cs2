@@ -39,7 +39,7 @@ export const setKeyBodySchema = z.object({
 });
 
 export const providerParamsSchema = z.object({
-  providerId: z.enum(['openai', 'anthropic', 'google', 'deepseek', 'xai', 'groq', 'user']),
+  providerId: z.enum(['openai', 'anthropic', 'google', 'deepseek', 'xai', 'groq', 'qwen', 'moonshot', 'zhipu', 'doubao', 'minimax', 'hunyuan', 'user']),
 });
 
 // ============================================================
@@ -50,7 +50,7 @@ export const statsHistoryQuerySchema = z.object({
 });
 
 export const calibrationParamsSchema = z.object({
-  providerId: z.enum(['openai', 'anthropic', 'google', 'deepseek', 'xai', 'groq']),
+  providerId: z.enum(['openai', 'anthropic', 'google', 'deepseek', 'xai', 'groq', 'qwen', 'moonshot', 'zhipu', 'doubao', 'minimax', 'hunyuan']),
 });
 
 // ============================================================

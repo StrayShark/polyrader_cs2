@@ -75,7 +75,7 @@ export class SimulationService {
     const config = this.getConfig();
     const providers = config.participatingProviders.length > 0
       ? config.participatingProviders
-      : ['openai', 'anthropic', 'google', 'deepseek', 'xai', 'groq'] as LLMProvider[];
+      : ['openai', 'anthropic', 'google', 'deepseek', 'xai', 'groq', 'qwen', 'moonshot', 'zhipu', 'doubao', 'minimax', 'hunyuan'] as LLMProvider[];
 
     const allBets = this.llmRepo.getBetsByProviders(providers, 1000);
     return providers.map(p =>
@@ -98,7 +98,7 @@ export class SimulationService {
     const config = this.getConfig();
     const providers = config.participatingProviders.length > 0
       ? config.participatingProviders
-      : ['openai', 'anthropic', 'google', 'deepseek', 'xai', 'groq'] as LLMProvider[];
+      : ['openai', 'anthropic', 'google', 'deepseek', 'xai', 'groq', 'qwen', 'moonshot', 'zhipu', 'doubao', 'minimax', 'hunyuan'] as LLMProvider[];
 
     const result: Record<string, EquityCurvePoint[]> = {};
     for (const p of providers) {

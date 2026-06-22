@@ -466,6 +466,9 @@ export class AiConfigService {
       openai: 'gpt-4o', anthropic: 'claude-3-5-sonnet-20241022',
       google: 'gemini-2.0-flash', deepseek: 'deepseek-chat',
       xai: 'grok-2', groq: 'llama-3.3-70b-versatile',
+      qwen: 'qwen-max', moonshot: 'moonshot-v1-128k',
+      zhipu: 'glm-4-plus', doubao: 'doubao-1.5-pro-256k',
+      minimax: 'abab6.5s-chat', hunyuan: 'hunyuan-large',
       user: 'manual',
     };
     return defaults[provider];

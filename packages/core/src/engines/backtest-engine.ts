@@ -110,7 +110,7 @@ export class BacktestEngine {
     // Calculate per-provider stats
     const providers = config.participatingProviders.length > 0
       ? config.participatingProviders
-      : ['openai', 'anthropic', 'google', 'deepseek', 'xai', 'groq'] as LLMProvider[];
+      : ['openai', 'anthropic', 'google', 'deepseek', 'xai', 'groq', 'qwen', 'moonshot', 'zhipu', 'doubao', 'minimax', 'hunyuan'] as LLMProvider[];
 
     const providerStats = providers.map(p =>
       this.bettingEngine.calculateProviderStats(p, simBets, config.initialCapital),

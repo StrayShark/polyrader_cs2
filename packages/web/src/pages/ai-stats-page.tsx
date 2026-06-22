@@ -182,7 +182,7 @@ export function AiStatsPage() {
               }}
               className="rounded border bg-background px-2 py-1 text-xs"
             >
-              {['openai', 'anthropic', 'google', 'deepseek', 'xai', 'groq', 'user'].map((p) => (
+              {['openai', 'anthropic', 'google', 'deepseek', 'xai', 'groq', 'qwen', 'moonshot', 'zhipu', 'doubao', 'minimax', 'hunyuan', 'user'].map((p) => (
                 <option key={p} value={p}>{p}</option>
               ))}
             </select>

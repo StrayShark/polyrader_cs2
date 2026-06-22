@@ -23,7 +23,7 @@ const setKeyBodySchema = z.object({
 });
 
 const providerParamsSchema = z.object({
-  providerId: z.enum(['openai', 'anthropic', 'google', 'deepseek', 'xai', 'groq']),
+  providerId: z.enum(['openai', 'anthropic', 'google', 'deepseek', 'xai', 'groq', 'qwen', 'moonshot', 'zhipu', 'doubao', 'minimax', 'hunyuan']),
 });
 
 const placeBetBodySchema = z.object({

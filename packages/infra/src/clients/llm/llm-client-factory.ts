@@ -5,6 +5,12 @@ import { GoogleClient } from './google-client';
 import { DeepSeekClient } from './deepseek-client';
 import { XAIClient } from './xai-client';
 import { GroqClient } from './groq-client';
+import { QwenClient } from './qwen-client';
+import { MoonshotClient } from './moonshot-client';
+import { ZhipuClient } from './zhipu-client';
+import { DoubaoClient } from './doubao-client';
+import { MinimaxClient } from './minimax-client';
+import { HunyuanClient } from './hunyuan-client';
 
 export interface LLMClient {
   provider: LLMProvider;
@@ -29,6 +35,18 @@ export class LLMClientFactory {
         return new XAIClient(apiKey, model ?? 'grok-2');
       case 'groq':
         return new GroqClient(apiKey, model ?? 'llama-3.3-70b-versatile');
+      case 'qwen':
+        return new QwenClient(apiKey, model ?? 'qwen-max');
+      case 'moonshot':
+        return new MoonshotClient(apiKey, model ?? 'moonshot-v1-128k');
+      case 'zhipu':
+        return new ZhipuClient(apiKey, model ?? 'glm-4-plus');
+      case 'doubao':
+        return new DoubaoClient(apiKey, model ?? 'doubao-1.5-pro-256k');
+      case 'minimax':
+        return new MinimaxClient(apiKey, model ?? 'abab6.5s-chat');
+      case 'hunyuan':
+        return new HunyuanClient(apiKey, model ?? 'hunyuan-large');
       default:
         throw new Error(`Unknown LLM provider: ${provider}`);
     }

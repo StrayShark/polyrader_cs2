@@ -9,11 +9,13 @@ import { useI18n } from '../hooks/use-i18n';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import type { LLMProvider, SimulationConfig } from '@polyrader/core';
 
-const ALL_PROVIDERS: LLMProvider[] = ['openai', 'anthropic', 'google', 'deepseek', 'xai', 'groq'];
+const ALL_PROVIDERS: LLMProvider[] = ['openai', 'anthropic', 'google', 'deepseek', 'xai', 'groq', 'qwen', 'moonshot', 'zhipu', 'doubao', 'minimax', 'hunyuan'];
 
 const PROVIDER_COLORS: Record<string, string> = {
   openai: '#10b981', anthropic: '#f59e0b', google: '#3b82f6',
   deepseek: '#8b5cf6', xai: '#ef4444', groq: '#06b6d4',
+  qwen: '#8b5cf6', moonshot: '#06b6d4', zhipu: '#f59e0b',
+  doubao: '#ef4444', minimax: '#10b981', hunyuan: '#3b82f6',
 };
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
