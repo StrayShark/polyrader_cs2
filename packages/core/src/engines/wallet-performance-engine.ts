@@ -18,6 +18,24 @@ export interface WalletPerformanceMetrics {
   pendingTrades: number;
 }
 
+export interface WinRateTimelinePoint {
+  date: string;
+  winRate: number;
+  settledBets: number;
+  cumulativePnl: number;
+}
+
+export interface MarketPerformanceBreakdown {
+  marketId: string;
+  marketQuestion: string;
+  settledBets: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  pnl: number;
+  totalWagered: number;
+}
+
 export interface WalletPerformanceOptions {
   /** Minimum settled buy trades required for ranking (default 5) */
   minSettledBets?: number;
@@ -112,6 +130,101 @@ export class WalletPerformanceEngine {
       roi: round4(roi),
       pendingTrades,
     };
+  }
+
+  /**
+   * Cumulative win-rate curve over settled buy trades (chronological).
+   */
+  computeWinRateTimeline(
+    trades: WhaleTrade[],
+    tokenMap: Map<string, TokenResolutionInfo>,
+  ): WinRateTimelinePoint[] {
+    const settled = trades
+      .filter((trade) => trade.type === 'buy')
+      .map((trade) => ({ trade, result: this.settleBuyTrade(trade, tokenMap) }))
+      .filter((entry): entry is { trade: WhaleTrade; result: { won: boolean; pnl: number } } => entry.result !== null)
+      .sort((a, b) => a.trade.timestamp.localeCompare(b.trade.timestamp));
+
+    let wins = 0;
+    let cumulativePnl = 0;
+    const points: WinRateTimelinePoint[] = [];
+
+    for (const { trade, result } of settled) {
+      if (result.won) wins += 1;
+      cumulativePnl += result.pnl;
+      const settledBets = points.length + 1;
+      points.push({
+        date: trade.timestamp.slice(0, 10),
+        winRate: round4(wins / settledBets),
+        settledBets,
+        cumulativePnl: round2(cumulativePnl),
+      });
+    }
+
+    return points;
+  }
+
+  /**
+   * Per-market settled performance (top markets by wagered amount).
+   */
+  computeMarketBreakdown(
+    trades: WhaleTrade[],
+    tokenMap: Map<string, TokenResolutionInfo>,
+    marketLabels: Map<string, string> = new Map(),
+    limit = 8,
+  ): MarketPerformanceBreakdown[] {
+    const buckets = new Map<string, MarketPerformanceBreakdown>();
+
+    for (const trade of trades) {
+      if (trade.type !== 'buy') continue;
+      const result = this.settleBuyTrade(trade, tokenMap);
+      if (!result) continue;
+
+      const tokenInfo = tokenMap.get(trade.marketId)!;
+      const key = tokenInfo.conditionId || trade.marketId;
+      const existing = buckets.get(key) ?? {
+        marketId: key,
+        marketQuestion: marketLabels.get(key) ?? marketLabels.get(trade.marketId) ?? `Market ${key.slice(0, 8)}…`,
+        settledBets: 0,
+        wins: 0,
+        losses: 0,
+        winRate: 0,
+        pnl: 0,
+        totalWagered: 0,
+      };
+
+      existing.settledBets += 1;
+      existing.totalWagered += Math.max(0, trade.amount);
+      existing.pnl = round2(existing.pnl + result.pnl);
+      if (result.won) existing.wins += 1;
+      else existing.losses += 1;
+      existing.winRate = round4(existing.wins / existing.settledBets);
+      buckets.set(key, existing);
+    }
+
+    return [...buckets.values()]
+      .sort((a, b) => b.totalWagered - a.totalWagered)
+      .slice(0, limit);
+  }
+
+  private settleBuyTrade(
+    trade: WhaleTrade,
+    tokenMap: Map<string, TokenResolutionInfo>,
+  ): { won: boolean; pnl: number } | null {
+    const tokenInfo = tokenMap.get(trade.marketId);
+    if (!tokenInfo) return null;
+
+    const tradeOutcome = this.normalizeOutcome(trade.outcome);
+    const heldOutcome = this.normalizeOutcome(
+      tradeOutcome !== 'unknown' ? trade.outcome : tokenInfo.outcomeLabel,
+    );
+    const winningOutcome = this.normalizeOutcome(tokenInfo.resolvedOutcome);
+    if (heldOutcome === 'unknown' || winningOutcome === 'unknown') return null;
+
+    const wager = Math.max(0, trade.amount);
+    const won = heldOutcome === winningOutcome;
+    const pnl = won ? this.pnlForWinningBuy(trade) : -wager;
+    return { won, pnl };
   }
 
   rankByWinRate(

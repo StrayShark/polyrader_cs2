@@ -20,6 +20,14 @@ const ORDER_FILLED_TOPIC = '0x9b1bfa7fa9ee420a16e124f794c35ac9f90472acc99140eb2f
 // Minimum USDC value to be considered a "whale" trade
 const MIN_TRADE_VALUE = 500;
 
+export interface WhaleIngestionStatus {
+  lastScanAt: string | null;
+  lastSuccessAt: string | null;
+  consecutiveFailures: number;
+  lastError: string | null;
+  lastIngestedCount: number;
+}
+
 export class WhaleIngestionService {
   private client = new PolygonClient();
   private repo = new WhaleRepository();
@@ -28,6 +36,17 @@ export class WhaleIngestionService {
   private walletFollowService?: WalletFollowService;
   // Cache tokenId → outcome to avoid querying all markets for every trade log
   private tokenOutcomeCache = new Map<string, string>();
+  private status: WhaleIngestionStatus = {
+    lastScanAt: null,
+    lastSuccessAt: null,
+    consecutiveFailures: 0,
+    lastError: null,
+    lastIngestedCount: 0,
+  };
+
+  getStatus(): WhaleIngestionStatus {
+    return { ...this.status };
+  }
 
   setWalletFollowService(service: WalletFollowService): void {
     this.walletFollowService = service;
@@ -38,6 +57,7 @@ export class WhaleIngestionService {
    * Processes the last ~500 blocks (~25 minutes on Polygon).
    */
   async scanRecentTrades(): Promise<number> {
+    this.status.lastScanAt = new Date().toISOString();
     try {
       const currentBlock = await this.client.getBlockNumber();
       const fromBlock = '0x' + Math.max(0, currentBlock - 500).toString(16);
@@ -92,9 +112,19 @@ export class WhaleIngestionService {
         }
       }
 
+      this.status.lastSuccessAt = new Date().toISOString();
+      this.status.consecutiveFailures = 0;
+      this.status.lastError = null;
+      this.status.lastIngestedCount = ingested;
       return ingested;
     } catch (err) {
-      logger.error('[WhaleIngestion] Scan failed', { error: (err as Error).message });
+      this.status.consecutiveFailures += 1;
+      this.status.lastError = (err as Error).message;
+      this.status.lastIngestedCount = 0;
+      logger.error('[WhaleIngestion] Scan failed', {
+        error: (err as Error).message,
+        consecutiveFailures: this.status.consecutiveFailures,
+      });
       return 0;
     }
   }
@@ -253,3 +283,6 @@ export class WhaleIngestionService {
     });
   }
 }
+
+/** Shared instance for cron + health monitoring */
+export const sharedWhaleIngestion = new WhaleIngestionService();

@@ -91,6 +91,7 @@ export const walletCopyConfigBodySchema = z.object({
   dailyCapUsd: z.coerce.number().min(1).max(1_000_000).optional(),
   minMarketVolumeShare: z.coerce.number().min(0).max(1).optional(),
   minMarketVolumeUsd: z.coerce.number().min(0).max(10_000_000).optional(),
+  requireUserConfirm: z.boolean().optional(),
 });
 
 export const walletFollowQuerySchema = z.object({
@@ -144,6 +145,7 @@ const signalSourceWeightsSchema = z.object({
   community: z.coerce.number().min(0).max(5).optional(),
   capital_flow: z.coerce.number().min(0).max(5).optional(),
   whale_flow: z.coerce.number().min(0).max(5).optional(),
+  smart_wallet: z.coerce.number().min(0).max(5).optional(),
   mean_reversion: z.coerce.number().min(0).max(5).optional(),
   market_behavior: z.coerce.number().min(0).max(5).optional(),
   ai_debate: z.coerce.number().min(0).max(5).optional(),

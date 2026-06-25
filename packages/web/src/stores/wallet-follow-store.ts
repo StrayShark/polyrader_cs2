@@ -8,14 +8,17 @@ interface WalletFollowState {
   config: WalletCopyConfig | null;
   signals: WalletCopySignal[];
   copyTrades: CopyTrade[];
+  copySummary: { totalPnl: number; settled: number; wins: number; losses: number } | null;
   isLoading: boolean;
   error: string | null;
   fetchFollowed: () => Promise<void>;
   fetchConfig: () => Promise<void>;
   fetchSignals: () => Promise<void>;
   fetchCopyTrades: () => Promise<void>;
+  fetchCopySummary: () => Promise<void>;
   follow: (address: string, options?: { autoCopyEnabled?: boolean }) => Promise<void>;
   unfollow: (address: string) => Promise<void>;
+  updateFollow: (address: string, partial: Partial<Pick<FollowedWallet, 'minTradeUsd' | 'alertsEnabled' | 'autoCopyEnabled' | 'label'>>) => Promise<void>;
   updateConfig: (partial: Partial<WalletCopyConfig>) => Promise<void>;
   executeSignal: (signalId: string) => Promise<void>;
   isFollowed: (address: string) => boolean;
@@ -27,6 +30,7 @@ export const useWalletFollowStore = create<WalletFollowState>((set, get) => ({
   config: null,
   signals: [],
   copyTrades: [],
+  copySummary: null,
   isLoading: false,
   error: null,
 
@@ -66,6 +70,17 @@ export const useWalletFollowStore = create<WalletFollowState>((set, get) => ({
     }
   },
 
+  fetchCopySummary: async () => {
+    try {
+      const { data } = await api.get<{ data: { totalPnl: number; settled: number; wins: number; losses: number } }>(
+        '/whale-follow/trades/summary',
+      );
+      set({ copySummary: data });
+    } catch (err) {
+      set({ error: (err as Error).message });
+    }
+  },
+
   follow: async (address, options) => {
     await api.post('/whale-follow', {
       address,
@@ -80,6 +95,11 @@ export const useWalletFollowStore = create<WalletFollowState>((set, get) => ({
     await get().fetchFollowed();
   },
 
+  updateFollow: async (address, partial) => {
+    await api.put(`/whale-follow/${address}`, partial);
+    await get().fetchFollowed();
+  },
+
   updateConfig: async (partial) => {
     const { data } = await api.put<{ data: WalletCopyConfig }>('/whale-follow/config', partial);
     set({ config: data });
@@ -87,7 +107,7 @@ export const useWalletFollowStore = create<WalletFollowState>((set, get) => ({
 
   executeSignal: async (signalId) => {
     await api.post(`/whale-follow/signals/${signalId}/execute`);
-    await Promise.all([get().fetchSignals(), get().fetchCopyTrades()]);
+    await Promise.all([get().fetchSignals(), get().fetchCopyTrades(), get().fetchCopySummary()]);
   },
 
   isFollowed: (address) => get().followedSet.has(address.toLowerCase()),

@@ -49,6 +49,18 @@ export class WalletFollowController {
     }
   }
 
+  async updateFollow(req: Request, res: Response): Promise<void> {
+    try {
+      const body = req.body as FollowWalletBody;
+      const wallet = this.service.updateFollow(req.params.address, body);
+      res.json({ data: wallet });
+    } catch (err) {
+      const message = (err as Error).message;
+      const status = message.includes('not followed') ? 404 : 400;
+      res.status(status).json({ error: message });
+    }
+  }
+
   async getConfig(_req: Request, res: Response): Promise<void> {
     try {
       res.json({ data: this.service.getConfig() });
@@ -81,6 +93,14 @@ export class WalletFollowController {
       res.json({ data: this.service.listCopyTrades(query.limit) });
     } catch (err) {
       res.status(500).json({ error: 'Failed to list copy trades' });
+    }
+  }
+
+  async getCopyTradeSummary(_req: Request, res: Response): Promise<void> {
+    try {
+      res.json({ data: this.service.getCopyTradeSummary() });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to get copy trade summary' });
     }
   }
 

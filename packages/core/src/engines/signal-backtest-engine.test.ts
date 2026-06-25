@@ -31,7 +31,7 @@ describe('SignalBacktestEngine', () => {
     ]);
 
     expect(result.sampleSize).toBe(2);
-    expect(result.metrics).toHaveLength(5);
+    expect(result.metrics).toHaveLength(6);
     expect(result.metrics.find((metric) => metric.source === 'prediction_model')?.brierScore).toBeCloseTo(0.09, 2);
     expect(result.metrics.find((metric) => metric.source === 'market')?.bets).toBe(0);
   });
@@ -65,5 +65,30 @@ describe('SignalBacktestEngine', () => {
 
     expect(model?.currentWeight).toBe(1.4);
     expect(model?.suggestedWeight).toBe(1.4);
+  });
+
+  it('includes smart_wallet source when snapshot has smart_wallet signal', () => {
+    const result = engine.run([
+      makeSnapshot({
+        marketProb: 0.45,
+        signals: [
+          { source: 'smart_wallet', probability: 0.72, confidence: 0.8, lastUpdated: '2026-01-01T00:00:00Z' },
+        ],
+        resolvedPrice: 1,
+      }),
+      makeSnapshot({
+        marketId: 'm2',
+        marketProb: 0.55,
+        signals: [
+          { source: 'smart_wallet', probability: 0.35, confidence: 0.7, lastUpdated: '2026-01-02T00:00:00Z' },
+        ],
+        resolvedPrice: 0,
+      }),
+    ], { minEdge: 0.05 });
+
+    const smartWallet = result.metrics.find((metric) => metric.source === 'smart_wallet');
+    expect(smartWallet?.sampleSize).toBe(2);
+    expect(smartWallet?.currentWeight).toBe(0.75);
+    expect(smartWallet?.bets).toBeGreaterThan(0);
   });
 });

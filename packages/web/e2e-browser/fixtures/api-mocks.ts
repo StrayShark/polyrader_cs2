@@ -99,6 +99,7 @@ const MOCK_BACKTEST = {
       community: 0.05,
       capital_flow: 0.15,
       whale_flow: 0.1,
+      smart_wallet: 0.75,
       mean_reversion: 0.1,
       market_behavior: 0.1,
       ai_debate: 0.1,
@@ -236,6 +237,13 @@ export async function setupCommonMocks(page: Page): Promise<void> {
     if (url.includes('/signals')) {
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: [] }) });
     }
+    if (url.includes('/trades/summary')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: { totalPnl: 42, settled: 3, wins: 2, losses: 1 } }),
+      });
+    }
     if (url.includes('/trades')) {
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: [] }) });
     }
@@ -249,6 +257,46 @@ export async function setupCommonMocks(page: Page): Promise<void> {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({ data: { nodes: [], links: [] } }),
+      });
+    }
+    const detailMatch = url.match(/\/whales\/(0x[a-fA-F0-9]+)/);
+    if (detailMatch) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: {
+            address: detailMatch[1],
+            totalVolume: 500000,
+            totalPositions: 10,
+            activePositions: 3,
+            winRate: 0.65,
+            pnl: 1200,
+            suspiciousScore: { total: 35, volumeAnomaly: 10, timingAnomaly: 10, patternAnomaly: 8, correlationAnomaly: 7 },
+            recentTrades: [
+              { txHash: '0x1', marketId: 'token1', outcome: 'Yes', amount: 5000, price: 0.6, timestamp: '2026-06-20T00:00:00Z', type: 'buy' },
+            ],
+            lastActive: '2026-06-25T10:00:00Z',
+            performance: {
+              settledBets: 12,
+              wins: 8,
+              losses: 4,
+              winRate: 0.667,
+              totalPnl: 1200,
+              totalWagered: 8000,
+              roi: 0.15,
+              pendingTrades: 2,
+            },
+            winRateTimeline: [
+              { date: '2026-06-01', winRate: 1, settledBets: 1, cumulativePnl: 100 },
+              { date: '2026-06-10', winRate: 0.5, settledBets: 2, cumulativePnl: 0 },
+            ],
+            marketBreakdown: [
+              { marketId: 'm1', marketQuestion: 'Spirit vs G2', settledBets: 5, wins: 4, losses: 1, winRate: 0.8, pnl: 900, totalWagered: 3000 },
+            ],
+            isFollowed: false,
+          },
+        }),
       });
     }
     return route.fulfill({

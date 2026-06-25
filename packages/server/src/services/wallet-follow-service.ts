@@ -1,5 +1,7 @@
 import {
   CopySignalEngine,
+  CopyTradeSettlementEngine,
+  WalletPerformanceEngine,
   type WhaleTrade,
   type WalletCopySignal,
   type FollowedWallet,
@@ -20,6 +22,7 @@ export class WalletFollowService {
   private whaleRepo = new WhaleRepository();
   private marketRepo = new MarketRepository();
   private engine = new CopySignalEngine();
+  private settlementEngine = new CopyTradeSettlementEngine();
   private clobClient = new PolymarketClobClient();
 
   listFollowed(): FollowedWallet[] {
@@ -47,6 +50,17 @@ export class WalletFollowService {
     return this.repo.unfollow(address);
   }
 
+  updateFollow(
+    address: string,
+    partial: Partial<Pick<FollowedWallet, 'label' | 'minTradeUsd' | 'alertsEnabled' | 'autoCopyEnabled'>>,
+  ): FollowedWallet {
+    const wallet = this.repo.updateFollow(address, partial);
+    if (!wallet) {
+      throw new Error('Wallet not followed');
+    }
+    return wallet;
+  }
+
   getConfig(): WalletCopyConfig {
     return this.repo.getConfig();
   }
@@ -56,11 +70,58 @@ export class WalletFollowService {
   }
 
   listSignals(limit = 50, status?: WalletCopySignal['status']): WalletCopySignal[] {
-    return this.repo.listSignals(limit, status);
+    return this.repo.listSignals(limit, status).map((signal) => this.enrichSignal(signal));
+  }
+
+  private enrichSignal(signal: WalletCopySignal): WalletCopySignal {
+    const market =
+      this.marketRepo.findByTokenId(signal.tokenId)
+      ?? (signal.conditionId ? this.marketRepo.findByConditionId(signal.conditionId) : null);
+    return market?.slug ? { ...signal, marketSlug: market.slug } : signal;
   }
 
   listCopyTrades(limit = 50): CopyTrade[] {
     return this.repo.listCopyTrades(limit);
+  }
+
+  getCopyTradeSummary(): { totalPnl: number; settled: number; wins: number; losses: number } {
+    return this.repo.getCopyTradeSummary();
+  }
+
+  /**
+   * Settle filled paper copy trades against resolved markets.
+   */
+  settleCopyTrades(): { settled: number } {
+    const markets = this.marketRepo.findResolvedMarkets()
+      .filter((market) => this.marketRepo.isCs2MarketRecord(market));
+    const performanceEngine = new WalletPerformanceEngine();
+    const resolutionMap = performanceEngine.buildTokenResolutionMap(markets);
+
+    const pending = this.repo.listUnsettledCopyTrades();
+    let settled = 0;
+
+    for (const trade of pending) {
+      const signal = this.repo.getSignal(trade.signalId);
+      const result = this.settlementEngine.settleTrade(
+        trade,
+        resolutionMap,
+        trade.outcome ?? signal?.outcome,
+      );
+      if (result.settlementStatus === 'pending') continue;
+
+      this.repo.updateCopyTradeSettlement(trade.id, {
+        pnl: result.pnl,
+        settlementStatus: result.settlementStatus,
+        resolvedAt: result.resolvedAt,
+      });
+      settled += 1;
+    }
+
+    if (settled > 0) {
+      logger.info('[CopyTrade] Settlement complete', { settled });
+    }
+
+    return { settled };
   }
 
   /**
@@ -129,10 +190,12 @@ export class WalletFollowService {
 
     if (!signal) return null;
 
+    const enriched = this.enrichSignal(signal);
+
     if (followed.alertsEnabled) {
       broadcast('copy-signals', {
         type: 'copy-signal:new',
-        signal,
+        signal: enriched,
         sizingReason: sizing.reason,
       });
     }
@@ -144,10 +207,10 @@ export class WalletFollowService {
       !config.requireUserConfirm;
 
     if (shouldAutoCopy) {
-      await this.executeSignal(signal.id);
+      await this.executeSignal(enriched.id);
     }
 
-    return signal;
+    return enriched;
   }
 
   async executeSignal(signalId: string): Promise<CopyTrade> {
@@ -198,6 +261,8 @@ export class WalletFollowService {
       price: signal.leaderPrice,
       status: 'filled',
       executedAt: new Date().toISOString(),
+      marketQuestion: signal.marketQuestion ?? market?.question,
+      outcome: signal.outcome,
     });
 
     this.repo.updateSignalStatus(signalId, 'executed');

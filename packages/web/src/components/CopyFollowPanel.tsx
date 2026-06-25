@@ -1,9 +1,12 @@
-import { useEffect } from 'react';
-import { Star, Bell, Zap, Play } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Star, Bell, Zap, Play, Loader2, Inbox, Users, ExternalLink } from 'lucide-react';
 import { useWalletFollowStore } from '../stores/wallet-follow-store';
 import { useI18n } from '../hooks/use-i18n';
-import { Badge, Button, Card, CardHeader, CardTitle } from '@/components/ui';
+import { Badge, Button, Card, CardHeader, CardTitle, Input } from '@/components/ui';
 import { ProductModeNotice } from './ProductModeNotice';
+import { EmptyStateGuide } from './EmptyStateGuide';
+import { useToast } from './ToastProvider';
 import type { FollowedWallet, WalletCopySignal } from '@polyrader/core';
 
 export function CopyFollowPanel() {
@@ -13,21 +16,24 @@ export function CopyFollowPanel() {
     config,
     signals,
     copyTrades,
+    copySummary,
     fetchFollowed,
     fetchConfig,
     fetchSignals,
     fetchCopyTrades,
+    fetchCopySummary,
     unfollow,
+    updateFollow,
     updateConfig,
     executeSignal,
   } = useWalletFollowStore();
 
   useEffect(() => {
-    void Promise.all([fetchFollowed(), fetchConfig(), fetchSignals(), fetchCopyTrades()]);
-  }, [fetchFollowed, fetchConfig, fetchSignals, fetchCopyTrades]);
+    void Promise.all([fetchFollowed(), fetchConfig(), fetchSignals(), fetchCopyTrades(), fetchCopySummary()]);
+  }, [fetchFollowed, fetchConfig, fetchSignals, fetchCopyTrades, fetchCopySummary]);
 
   const refresh = () => {
-    void Promise.all([fetchFollowed(), fetchSignals(), fetchCopyTrades()]);
+    void Promise.all([fetchFollowed(), fetchSignals(), fetchCopyTrades(), fetchCopySummary()]);
   };
 
   return (
@@ -49,49 +55,52 @@ export function CopyFollowPanel() {
               >
                 {config.enabled ? t('whales.copyEnabled') : t('whales.copyDisabled')}
               </Button>
+              <Button
+                size="sm"
+                variant={config.requireUserConfirm ? 'outline' : 'default'}
+                onClick={() => updateConfig({ requireUserConfirm: !config.requireUserConfirm })}
+              >
+                {config.requireUserConfirm ? t('whales.manualConfirm') : t('whales.autoCopyMode')}
+              </Button>
               <Badge variant="yellow">{t('whales.modePaper')}</Badge>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <label className="space-y-1">
                 <span className="text-muted-foreground">{t('whales.copyRatio')}</span>
-                <input
+                <Input
                   type="number"
                   step="0.01"
                   min="0.01"
                   max="1"
-                  className="w-full rounded-md border bg-background px-2 py-1"
                   defaultValue={config.copyRatio}
                   onBlur={(e) => updateConfig({ copyRatio: Number(e.target.value) })}
                 />
               </label>
               <label className="space-y-1">
                 <span className="text-muted-foreground">{t('whales.maxOrderUsd')}</span>
-                <input
+                <Input
                   type="number"
                   min="1"
-                  className="w-full rounded-md border bg-background px-2 py-1"
                   defaultValue={config.maxOrderUsd}
                   onBlur={(e) => updateConfig({ maxOrderUsd: Number(e.target.value) })}
                 />
               </label>
               <label className="space-y-1">
                 <span className="text-muted-foreground">{t('whales.minVolumeShare')}</span>
-                <input
+                <Input
                   type="number"
                   step="0.005"
                   min="0.001"
                   max="1"
-                  className="w-full rounded-md border bg-background px-2 py-1"
                   defaultValue={config.minMarketVolumeShare}
                   onBlur={(e) => updateConfig({ minMarketVolumeShare: Number(e.target.value) })}
                 />
               </label>
               <label className="space-y-1">
                 <span className="text-muted-foreground">{t('whales.minMarketVolume')}</span>
-                <input
+                <Input
                   type="number"
                   min="0"
-                  className="w-full rounded-md border bg-background px-2 py-1"
                   defaultValue={config.minMarketVolumeUsd}
                   onBlur={(e) => updateConfig({ minMarketVolumeUsd: Number(e.target.value) })}
                 />
@@ -108,10 +117,25 @@ export function CopyFollowPanel() {
         </CardHeader>
         <div className="divide-y">
           {followed.length === 0 ? (
-            <p className="p-6 text-sm text-muted-foreground">{t('whales.noFollowed')}</p>
+            <EmptyStateGuide
+              className="m-4 border-none bg-transparent"
+              icon={Users}
+              title={t('whales.noFollowedTitle')}
+              description={t('whales.noFollowed')}
+              steps={[
+                t('whales.followGuideStep1Desc'),
+                t('whales.followGuideStep2Desc'),
+                t('whales.followGuideStep3Desc'),
+              ]}
+            />
           ) : (
             followed.map((w) => (
-              <FollowedRow key={w.address} wallet={w} onUnfollow={() => unfollow(w.address)} />
+              <FollowedRow
+                key={w.address}
+                wallet={w}
+                onUnfollow={() => unfollow(w.address)}
+                onUpdate={(partial) => updateFollow(w.address, partial)}
+              />
             ))
           )}
         </div>
@@ -123,7 +147,12 @@ export function CopyFollowPanel() {
         </CardHeader>
         <div className="divide-y max-h-[360px] overflow-y-auto">
           {signals.length === 0 ? (
-            <p className="p-6 text-sm text-muted-foreground">{t('whales.noSignals')}</p>
+            <EmptyStateGuide
+              className="m-4 border-none bg-transparent"
+              icon={Inbox}
+              title={t('whales.signalsEmptyTitle')}
+              description={t('whales.signalsEmptyDesc')}
+            />
           ) : (
             signals.map((s) => (
               <SignalRow key={s.id} signal={s} onExecute={() => executeSignal(s.id)} />
@@ -135,6 +164,19 @@ export function CopyFollowPanel() {
       <Card>
         <CardHeader className="border-b px-6 py-3">
           <CardTitle>{t('whales.copyTrades')}</CardTitle>
+          {copySummary && copySummary.settled > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {t('whales.copyPnlSummary')}:{' '}
+              <span className={copySummary.totalPnl >= 0 ? 'text-green' : 'text-red'}>
+                {copySummary.totalPnl >= 0 ? '+' : ''}${copySummary.totalPnl.toFixed(0)}
+              </span>
+              {' · '}
+              {t('whales.copyPnlSettled', {
+                settled: copySummary.settled,
+                winRate: ((copySummary.wins / copySummary.settled) * 100).toFixed(0),
+              })}
+            </p>
+          )}
         </CardHeader>
         <div className="divide-y max-h-[280px] overflow-y-auto">
           {copyTrades.length === 0 ? (
@@ -142,12 +184,19 @@ export function CopyFollowPanel() {
           ) : (
             copyTrades.map((trade) => (
               <div key={trade.id} className="flex items-center justify-between px-6 py-3 text-sm">
-                <div>
-                  <span className="font-mono text-xs">{trade.tokenId.slice(0, 8)}...</span>
-                  <span className="ml-2 text-muted-foreground">{trade.side.toUpperCase()}</span>
+                <div className="min-w-0 flex-1 pr-3">
+                  <p className="truncate text-xs">{trade.marketQuestion ?? trade.tokenId.slice(0, 12)}</p>
+                  <span className="font-mono text-[10px] text-muted-foreground">{trade.side.toUpperCase()}</span>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex shrink-0 items-center gap-3">
                   <span className="tabular-nums">${trade.amount.toFixed(0)} @ {(trade.price * 100).toFixed(0)}¢</span>
+                  {trade.settlementStatus === 'won' || trade.settlementStatus === 'lost' ? (
+                    <span className={`tabular-nums text-xs ${(trade.pnl ?? 0) >= 0 ? 'text-green' : 'text-red'}`}>
+                      {(trade.pnl ?? 0) >= 0 ? '+' : ''}${(trade.pnl ?? 0).toFixed(0)}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">{t('whales.tradePending')}</span>
+                  )}
                   <Badge variant={trade.status === 'filled' ? 'green' : trade.status === 'failed' ? 'red' : 'yellow'}>
                     {trade.mode}/{trade.status}
                   </Badge>
@@ -161,7 +210,15 @@ export function CopyFollowPanel() {
   );
 }
 
-function FollowedRow({ wallet, onUnfollow }: { wallet: FollowedWallet; onUnfollow: () => void }) {
+function FollowedRow({
+  wallet,
+  onUnfollow,
+  onUpdate,
+}: {
+  wallet: FollowedWallet;
+  onUnfollow: () => void;
+  onUpdate: (partial: Partial<Pick<FollowedWallet, 'alertsEnabled' | 'autoCopyEnabled'>>) => void;
+}) {
   const { t } = useI18n();
   return (
     <div className="flex items-center justify-between px-6 py-3 text-sm">
@@ -173,9 +230,23 @@ function FollowedRow({ wallet, onUnfollow }: { wallet: FollowedWallet; onUnfollo
           </span>
         )}
       </div>
-      <div className="flex items-center gap-2">
-        {wallet.alertsEnabled && <Bell className="h-3.5 w-3.5 text-muted-foreground" />}
-        {wallet.autoCopyEnabled && <Zap className="h-3.5 w-3.5 text-primary" />}
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          title={t('whales.toggleAlerts')}
+          onClick={() => onUpdate({ alertsEnabled: !wallet.alertsEnabled })}
+        >
+          <Bell className={`h-3.5 w-3.5 ${wallet.alertsEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          title={t('whales.toggleAutoCopy')}
+          onClick={() => onUpdate({ autoCopyEnabled: !wallet.autoCopyEnabled })}
+        >
+          <Zap className={`h-3.5 w-3.5 ${wallet.autoCopyEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
+        </Button>
         <Button variant="ghost" size="sm" onClick={onUnfollow}>{t('whales.unfollow')}</Button>
       </div>
     </div>
@@ -200,6 +271,15 @@ function SignalRow({ signal, onExecute }: { signal: WalletCopySignal; onExecute:
         </div>
       </div>
       <div className="flex items-center gap-2">
+        {signal.marketSlug && (
+          <Link
+            to={`/match/${signal.marketSlug}`}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent"
+            title={t('whales.viewMarket')}
+          >
+            <ExternalLink className="h-3 w-3" />
+          </Link>
+        )}
         <Badge variant={
           signal.status === 'executed' ? 'green' :
           signal.status === 'pending' ? 'yellow' :
@@ -220,20 +300,42 @@ function SignalRow({ signal, onExecute }: { signal: WalletCopySignal; onExecute:
 
 export function FollowWalletButton({ address }: { address: string }) {
   const { t } = useI18n();
+  const { addToast } = useToast();
   const { isFollowed, follow, unfollow } = useWalletFollowStore();
   const followed = isFollowed(address);
+  const [loading, setLoading] = useState(false);
 
   const toggle = async () => {
-    if (followed) {
-      await unfollow(address);
-    } else {
-      await follow(address);
+    if (loading) return;
+    setLoading(true);
+    try {
+      if (followed) {
+        await unfollow(address);
+        addToast('info', t('whales.unfollowSuccess'));
+      } else {
+        await follow(address);
+        addToast('success', t('whales.followSuccess'));
+      }
+    } catch {
+      addToast('error', t('whales.followError'));
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Button variant="ghost" size="sm" onClick={toggle} title={followed ? t('whales.unfollow') : t('whales.follow')}>
-      <Star className={`h-3.5 w-3.5 ${followed ? 'fill-primary text-primary' : ''}`} />
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={toggle}
+      disabled={loading}
+      title={followed ? t('whales.unfollow') : t('whales.follow')}
+    >
+      {loading ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <Star className={`h-3.5 w-3.5 ${followed ? 'fill-primary text-primary' : ''}`} />
+      )}
     </Button>
   );
 }

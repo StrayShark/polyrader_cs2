@@ -66,6 +66,7 @@ export const DEFAULT_SIGNAL_SOURCE_WEIGHTS: SignalSourceWeights = {
   community: 0.6,
   capital_flow: 0.55,
   whale_flow: 0.55,
+  smart_wallet: 0.75,
   mean_reversion: 0.55,
   market_behavior: 0.9,
   ai_debate: 1.15,

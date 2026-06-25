@@ -3,9 +3,10 @@ import {
   WhaleScoringEngine,
   type WalletPerformanceMetrics,
   type Whale,
+  type WhaleDetail,
   type WhaleTrade,
 } from '@polyrader/core';
-import { WhaleRepository, MarketRepository } from '@polyrader/infra';
+import { WhaleRepository, MarketRepository, WalletFollowRepository } from '@polyrader/infra';
 import { logger } from '../utils/logger';
 
 export interface WhaleLeaderboardOptions {
@@ -19,6 +20,7 @@ export class WalletPerformanceService {
   private scoringEngine = new WhaleScoringEngine();
   private whaleRepo = new WhaleRepository();
   private marketRepo = new MarketRepository();
+  private followRepo = new WalletFollowRepository();
 
   /**
    * Recompute win rate / PnL for every address with whale trades
@@ -81,6 +83,45 @@ export class WalletPerformanceService {
     const trades = this.whaleRepo.getAllTrades(address);
     if (trades.length === 0) return null;
     return this.engine.computeAddressPerformance(address, trades, tokenMap);
+  }
+
+  buildWhaleDetail(address: string, whale: Whale): WhaleDetail {
+    const normalized = address.toLowerCase();
+    const cs2Markets = this.marketRepo.findResolvedMarkets()
+      .filter((market) => this.marketRepo.isCs2MarketRecord(market));
+    const tokenMap = this.engine.buildTokenResolutionMap(cs2Markets);
+    const cs2TokenIds = new Set(tokenMap.keys());
+    const trades = this.whaleRepo.getAllTrades(normalized)
+      .filter((trade) => cs2TokenIds.has(trade.marketId));
+
+    const marketLabels = new Map<string, string>();
+    for (const market of cs2Markets) {
+      if (market.conditionId) marketLabels.set(market.conditionId, market.question);
+      market.clobTokenIds?.forEach((tokenId) => {
+        if (tokenId) marketLabels.set(tokenId, market.question);
+      });
+    }
+
+    const metrics = trades.length > 0
+      ? this.engine.computeAddressPerformance(normalized, trades, tokenMap)
+      : null;
+
+    return {
+      ...whale,
+      performance: metrics ? {
+        settledBets: metrics.settledBets,
+        wins: metrics.wins,
+        losses: metrics.losses,
+        winRate: metrics.winRate,
+        totalPnl: metrics.totalPnl,
+        totalWagered: metrics.totalWagered,
+        roi: metrics.roi,
+        pendingTrades: metrics.pendingTrades,
+      } : undefined,
+      winRateTimeline: this.engine.computeWinRateTimeline(trades, tokenMap),
+      marketBreakdown: this.engine.computeMarketBreakdown(trades, tokenMap, marketLabels),
+      isFollowed: this.followRepo.isFollowed(normalized),
+    };
   }
 
   private ensureWhaleRow(address: string, trades: WhaleTrade[]): void {

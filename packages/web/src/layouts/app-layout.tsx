@@ -5,12 +5,14 @@ import { StatusBar } from './status-bar';
 import { TickerBar } from '../components/TickerBar';
 import { useKeyboardShortcuts } from '../hooks/use-keyboard-shortcuts';
 import { useWhaleAlerts } from '../hooks/use-whale-alerts';
+import { useCopySignalAlerts } from '../hooks/use-copy-signal-alerts';
 import { useSettlementAlerts } from '../hooks/use-settlement-alerts';
 
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   useKeyboardShortcuts();
   useWhaleAlerts();
+  useCopySignalAlerts();
   useSettlementAlerts();
 
   return (

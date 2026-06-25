@@ -11,8 +11,9 @@ import { PriceFlash } from '../components/PriceFlash';
 import { MatchDetailSkeleton } from '../components/Skeletons';
 import { useWebSocket } from '../hooks/use-websocket';
 import { useI18n } from '../hooks/use-i18n';
-import { Card, CardHeader, CardTitle, Badge, Button, Input } from '@/components/ui';
+import { Card, CardHeader, CardTitle, Badge, Button, Input, Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui';
 import { ProductModeNotice } from '../components/ProductModeNotice';
+import { Breadcrumbs } from '../components/Breadcrumbs';
 import type { LLMAggregation, LLMAnalysisResult, MatchInfo } from '@polyrader/core';
 
 export function MatchDetailPage() {
@@ -29,6 +30,7 @@ export function MatchDetailPage() {
   const [priceData, setPriceData] = useState<Array<{ time: string; value: number }>>([]);
   const [orderBookData, setOrderBookData] = useState<{ bids: Array<{ price: number; size: number; side: 'bid' }>; asks: Array<{ price: number; size: number; side: 'ask' }> }>({ bids: [], asks: [] });
   const [timelineData, setTimelineData] = useState<TimelineSnapshot[]>([]);
+  const [section, setSection] = useState('overview');
 
   // Fetch match data
   useEffect(() => {
@@ -175,6 +177,23 @@ export function MatchDetailPage() {
         <div className="rounded-lg border border-red/20 bg-red/5 p-4 text-sm text-red">{analysisError}</div>
       )}
 
+      <Breadcrumbs
+        items={[
+          { label: t('nav.esports'), to: '/esports' },
+          { label: t('match.analysis') },
+          { label: `${match.teamA.name} vs ${match.teamB.name}` },
+        ]}
+      />
+
+      <Tabs value={section} onValueChange={setSection} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">{t('match.sectionOverview')}</TabsTrigger>
+          <TabsTrigger value="analysis">{t('match.sectionAnalysis')}</TabsTrigger>
+          <TabsTrigger value="market">{t('match.sectionMarket')}</TabsTrigger>
+          <TabsTrigger value="decision">{t('match.sectionDecision')}</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6 mt-0">
       {/* Match Header */}
       <Card className="p-6">
         <div className="flex items-center justify-between">
@@ -294,7 +313,9 @@ export function MatchDetailPage() {
           </div>
         )}
       </Card>
+        </TabsContent>
 
+        <TabsContent value="analysis" className="space-y-4 mt-0">
       {/* Analysis Sections */}
       <div className="grid grid-cols-2 gap-4">
         {/* 6-Factor Breakdown */}
@@ -521,8 +542,10 @@ export function MatchDetailPage() {
           )}
       </Card>
       </div>
+        </TabsContent>
 
-      {/* Kelly Allocation + Decision */}
+        <TabsContent value="market" className="space-y-4 mt-0">
+      {/* Kelly Allocation + Market Data */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Kelly Allocation */}
         <Card className="p-4">
@@ -603,7 +626,9 @@ export function MatchDetailPage() {
           )}
         </Card>
       </div>
+        </TabsContent>
 
+        <TabsContent value="decision" className="space-y-4 mt-0">
       {/* User Decision */}
       <ProductModeNotice mode="simulation" className="mb-0" />
       <Card className="p-4">
@@ -650,6 +675,8 @@ export function MatchDetailPage() {
           )}
         </div>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

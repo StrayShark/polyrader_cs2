@@ -21,7 +21,7 @@ import {
 } from '@polyrader/core';
 import type { PricePoint } from '@polyrader/core';
 import type { OrderBookSummary, HLTVCrawler } from '@polyrader/infra';
-import { cacheDelete, cacheGet, cacheKeys, cacheSet, HLTVCrawler as HLTVCrawlerClass, LLMRepository, SignalRepository } from '@polyrader/infra';
+import { cacheDelete, cacheGet, cacheKeys, cacheSet, HLTVCrawler as HLTVCrawlerClass, LLMRepository, SignalRepository, WalletFollowRepository } from '@polyrader/infra';
 import { MarketService } from './market-service';
 import { WhaleService } from './whale-service';
 import { buildMatchInfo, buildFallbackMatchInfo, loadTeamFromDb, buildFallbackTeam } from './match-helpers';
@@ -50,6 +50,7 @@ export class SignalService {
   private whaleService = new WhaleService();
   private llmRepo = new LLMRepository();
   private signalRepo = new SignalRepository();
+  private walletFollowRepo = new WalletFollowRepository();
   private hltvCrawler: HLTVCrawler = new HLTVCrawlerClass();
 
   async getSignals(marketId: string): Promise<SignalComparison | null> {
@@ -115,6 +116,10 @@ export class SignalService {
       }
 
       const extraSignals = this.buildExtraSignals(marketBehavior, aiDebate);
+      const smartWallet = this.buildSmartWalletSignal(market.conditionId);
+      if (smartWallet) {
+        extraSignals.push(smartWallet);
+      }
       const signal = this.engine.compareSignals(
         marketId,
         polymarketProb,
@@ -318,6 +323,23 @@ export class SignalService {
     }
 
     return signals;
+  }
+
+  private buildSmartWalletSignal(conditionId: string): SignalSource | null {
+    const bias = this.walletFollowRepo.getFollowedMarketBias(conditionId);
+    if (!bias) return null;
+
+    return {
+      source: 'smart_wallet',
+      probability: bias.probability,
+      confidence: bias.confidence,
+      lastUpdated: new Date().toISOString(),
+      details: {
+        signalCount: bias.signalCount,
+        totalBuyUsd: bias.totalBuyUsd,
+        scope: 'followed_leaders',
+      },
+    };
   }
 
   private buildAiDebateSignal(marketId: string, marketProb: number): DebateInferenceResult | undefined {

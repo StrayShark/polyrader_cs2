@@ -45,7 +45,7 @@ export class WhaleController {
 
   async getWhale(req: Request, res: Response): Promise<void> {
     try {
-      const whale = await this.service.getWhale(req.params.address);
+      const whale = await this.service.getWhaleDetail(req.params.address);
       if (!whale) {
         res.status(404).json({ error: 'Whale not found' });
         return;

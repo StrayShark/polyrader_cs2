@@ -322,6 +322,36 @@ export interface Whale {
   performanceUpdatedAt?: string;
 }
 
+export interface WhaleDetail extends Whale {
+  performance?: {
+    settledBets: number;
+    wins: number;
+    losses: number;
+    winRate: number;
+    totalPnl: number;
+    totalWagered: number;
+    roi: number;
+    pendingTrades: number;
+  };
+  winRateTimeline: Array<{
+    date: string;
+    winRate: number;
+    settledBets: number;
+    cumulativePnl: number;
+  }>;
+  marketBreakdown: Array<{
+    marketId: string;
+    marketQuestion: string;
+    settledBets: number;
+    wins: number;
+    losses: number;
+    winRate: number;
+    pnl: number;
+    totalWagered: number;
+  }>;
+  isFollowed: boolean;
+}
+
 export interface SuspiciousScore {
   total: number;       // 0-100
   volumeAnomaly: number;
@@ -394,10 +424,13 @@ export interface WalletCopySignal {
   skipReason?: string;
   /** Leader trade size / market 24h volume */
   leaderVolumeShare?: number;
+  /** Resolved market slug for navigation */
+  marketSlug?: string;
   createdAt: string;
 }
 
 export type CopyTradeStatus = 'pending' | 'filled' | 'failed' | 'rejected';
+export type CopyTradeSettlementStatus = 'pending' | 'won' | 'lost';
 
 export interface CopyTrade {
   id: string;
@@ -412,6 +445,12 @@ export interface CopyTrade {
   clobOrderId?: string;
   executedAt?: string;
   createdAt: string;
+  /** Settled PnL for paper trades */
+  pnl?: number;
+  settlementStatus?: CopyTradeSettlementStatus;
+  marketQuestion?: string;
+  outcome?: string;
+  resolvedAt?: string;
 }
 
 export interface CopyTradeSizingResult {
@@ -860,6 +899,7 @@ export type SignalSourceKind =
   | 'community'
   | 'capital_flow'
   | 'whale_flow'
+  | 'smart_wallet'
   | 'mean_reversion'
   | 'market_behavior'
   | 'ai_debate';
@@ -910,6 +950,7 @@ export type SignalBacktestSourceKind =
   | 'prediction_model'
   | 'market_behavior'
   | 'ai_debate'
+  | 'smart_wallet'
   | 'final';
 
 export interface SignalCalibrationBucket {

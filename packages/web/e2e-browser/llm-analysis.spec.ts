@@ -22,10 +22,10 @@ test.describe('LLM Analysis page', () => {
     expect(errorCount).toBe(0);
   });
 
-  test('can navigate back to AI stats', async ({ page }) => {
+  test('can navigate back to AI stats via breadcrumb', async ({ page }) => {
     await page.goto('/#/llm/analysis/openai');
     await waitForMainHeading(page);
-    await page.locator('main button').first().click();
+    await page.getByLabel('Breadcrumb').getByRole('link', { name: /AI 胜率|AI Stats/i }).click();
     await page.waitForURL('**/ai/stats**');
     expect(page.url()).toContain('/ai/stats');
   });

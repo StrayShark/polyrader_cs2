@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-25T06:36:39.590Z",
+  "generatedAt": "2026-06-25T11:05:57.067Z",
   "entries": [
     {
       "page": "dashboard",
@@ -59,7 +59,7 @@
     {
       "page": "match-detail",
       "module": "orderbook",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "page": "match-detail",
@@ -129,7 +129,7 @@
     {
       "page": "ai-config",
       "module": "api-keys",
-      "status": "pass"
+      "status": "partial"
     },
     {
       "page": "ai-config",

@@ -8,7 +8,7 @@ import { LLMRepository, EsportsRepository } from '@polyrader/infra';
 import { runMigrations, query, queryOne } from '@polyrader/infra';
 import { SettlementEngine, MatchStateMachine, EsportsEnricher, type EnricherSources } from '@polyrader/core';
 import type { SimulatedBet, Team, Player, HeadToHead } from '@polyrader/core';
-import { WhaleIngestionService } from '../services/whale-ingestion-service';
+import { sharedWhaleIngestion } from '../services/whale-ingestion-service';
 import { WalletPerformanceService } from '../services/wallet-performance-service';
 import { WalletFollowService } from '../services/wallet-follow-service';
 import { trackTask } from '../services/task-tracker-service';
@@ -28,7 +28,7 @@ const enricher = new EsportsEnricher();
 const marketRepo = new MarketRepository();
 const pmGammaClient = new PolymarketGammaClient();
 const settlementEngine = new SettlementEngine();
-const whaleIngestion = new WhaleIngestionService();
+const whaleIngestion = sharedWhaleIngestion;
 const walletPerformance = new WalletPerformanceService();
 const walletFollow = new WalletFollowService();
 whaleIngestion.setWalletFollowService(walletFollow);
@@ -313,6 +313,24 @@ export function startCronJobs(): void {
       if (result.addressesUpdated > 0) {
         broadcast('whales', { performanceUpdated: result.addressesUpdated });
         ctx.log(`已更新 ${result.addressesUpdated} 个地址的胜率统计`);
+      }
+      return result as Record<string, unknown>;
+    });
+  });
+
+  // ============================================================
+  // Copy trade settlement: after markets resolve
+  // ============================================================
+  cron.schedule('35 * * * *', () => {
+    void trackTask('copy-trade-settlement', {
+      name: '纸面跟单结算',
+      category: 'whale',
+      trigger: 'scheduled',
+    }, async (ctx) => {
+      const result = walletFollow.settleCopyTrades();
+      if (result.settled > 0) {
+        broadcast('copy-signals', { type: 'copy-trades:settled', settled: result.settled });
+        ctx.log(`已结算 ${result.settled} 笔纸面跟单`);
       }
       return result as Record<string, unknown>;
     });

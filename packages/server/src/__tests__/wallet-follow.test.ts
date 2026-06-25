@@ -32,4 +32,13 @@ describe('WalletFollowService', () => {
     const list = service.listFollowed();
     expect(list.some((w) => w.address === address.toLowerCase())).toBe(true);
   });
+
+  it('updates followed wallet alert and auto-copy toggles', () => {
+    const service = new WalletFollowService();
+    const address = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd';
+    service.follow({ address, alertsEnabled: true, autoCopyEnabled: false });
+    const updated = service.updateFollow(address, { alertsEnabled: false, autoCopyEnabled: true });
+    expect(updated.alertsEnabled).toBe(false);
+    expect(updated.autoCopyEnabled).toBe(true);
+  });
 });

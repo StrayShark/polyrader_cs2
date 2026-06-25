@@ -8,6 +8,7 @@ const DashboardPage = lazy(() => import('../pages/dashboard-page').then((m) => (
 const DailyPage = lazy(() => import('../pages/daily-page').then((m) => ({ default: m.DailyPage })));
 const MatchDetailPage = lazy(() => import('../pages/match-detail-page').then((m) => ({ default: m.MatchDetailPage })));
 const WhalesPage = lazy(() => import('../pages/whales-page').then((m) => ({ default: m.WhalesPage })));
+const WhaleDetailPage = lazy(() => import('../pages/whale-detail-page').then((m) => ({ default: m.WhaleDetailPage })));
 const EsportsPage = lazy(() => import('../pages/esports-page').then((m) => ({ default: m.EsportsPage })));
 const SignalsPage = lazy(() => import('../pages/signals-page').then((m) => ({ default: m.SignalsPage })));
 const PolymarketAccountPage = lazy(() => import('../pages/polymarket-account-page').then((m) => ({ default: m.PolymarketAccountPage })));
@@ -48,6 +49,7 @@ export const router = createHashRouter([
       { path: 'daily', element: withSuspense(DailyPage) },
       { path: 'match/:slug', element: withSuspense(MatchDetailPage) },
       { path: 'whales', element: withSuspense(WhalesPage) },
+      { path: 'whales/:address', element: withSuspense(WhaleDetailPage) },
       { path: 'esports', element: withSuspense(EsportsPage) },
       { path: 'signals', element: withSuspense(SignalsPage) },
       { path: 'polymarket/account', element: withSuspense(PolymarketAccountPage) },

@@ -49,6 +49,7 @@ const SOURCE_WEIGHT_KEYS = [
   'ai_debate',
   'capital_flow',
   'whale_flow',
+  'smart_wallet',
   'mean_reversion',
   'community',
   'hltv_odds',

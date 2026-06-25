@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, Target, Brain, DollarSign, RefreshCw, BarChart3 } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { TrendingUp, Target, Brain, DollarSign, RefreshCw, BarChart3 } from 'lucide-react';
 import { api } from '../utils/api';
 import { DataState } from '../components/DataState';
 import { CalibrationChart } from '../components/CalibrationChart';
+import { Breadcrumbs } from '../components/Breadcrumbs';
 import { useI18n } from '../hooks/use-i18n';
 import { Card, CardHeader, CardTitle, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Button } from '@/components/ui';
 import type { CalibrationPoint, SimulatedBet } from '@polyrader/core';
@@ -24,7 +25,6 @@ interface ProviderAnalysis {
 
 export function LlmAnalysisPage() {
   const { providerId = '' } = useParams<{ providerId: string }>();
-  const navigate = useNavigate();
   const { t } = useI18n();
   const [analysis, setAnalysis] = useState<ProviderAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,18 +53,20 @@ export function LlmAnalysisPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs
+        items={[
+          { label: t('nav.aiStats'), to: '/ai/stats' },
+          { label: providerId },
+        ]}
+      />
+
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/ai/stats')}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight capitalize flex items-center gap-2">
-              <Brain className="h-6 w-6 text-primary" />
-              {providerId}
-            </h1>
-            <p className="text-sm text-muted-foreground">{t('llmAnalysis.subtitle')}</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight capitalize flex items-center gap-2">
+            <Brain className="h-6 w-6 text-primary" />
+            {providerId}
+          </h1>
+          <p className="text-sm text-muted-foreground">{t('llmAnalysis.subtitle')}</p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchAnalysis} disabled={isLoading}>
           <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />

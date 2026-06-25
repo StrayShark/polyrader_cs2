@@ -50,14 +50,19 @@ test.describe('PRD module audit', () => {
     await expect(page.getByText('Spirit').first()).toBeVisible();
 
     record('match-detail', 'page-render', 'pass');
+
+    await page.getByRole('tab', { name: '市场数据' }).click();
     record('match-detail', 'price-chart', await page.locator('main canvas').count() > 0 ? 'pass' : 'fail');
 
     await page.getByRole('button', { name: '触发 LLM 分析' }).click();
+    await page.getByRole('tab', { name: 'AI 分析' }).click();
     await expect(page.getByText('LLM 共识分析')).toBeVisible({ timeout: 10000 });
     record('match-detail', 'llm-consensus', await page.locator('main svg').count() > 1 ? 'pass' : 'partial');
 
     record('match-detail', 'orderbook', await page.getByText('订单簿深度').first().isVisible() ? 'pass' : 'fail');
-        record('match-detail', 'decision-area', await page.getByRole('button', { name: '投注 Spirit' }).isVisible() ? 'pass' : 'fail');
+
+    await page.getByRole('tab', { name: '模拟决策' }).click();
+    record('match-detail', 'decision-area', await page.getByRole('button', { name: /记录模拟注.*Spirit/i }).isVisible() ? 'pass' : 'fail');
   });
 
   test('Whales — leaderboard and graph', async ({ page }) => {

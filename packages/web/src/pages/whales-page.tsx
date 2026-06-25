@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { Fish, AlertTriangle, TrendingUp, RefreshCw, Trophy } from 'lucide-react';
 import { useWhaleStore, type WhaleListMode } from '../stores/whale-store';
 import { useWalletFollowStore } from '../stores/wallet-follow-store';
@@ -7,6 +8,8 @@ import { StatsSkeleton, TableSkeleton } from '../components/Skeletons';
 import { VirtualList } from '../components/VirtualList';
 import { AddressGraph as AddressGraphView } from '../components/address-graph';
 import { CopyFollowPanel, FollowWalletButton } from '../components/CopyFollowPanel';
+import { WhaleFollowGuide } from '../components/WhaleFollowGuide';
+import { EmptyStateGuide } from '../components/EmptyStateGuide';
 import { useWebSocket } from '../hooks/use-websocket';
 import { useI18n } from '../hooks/use-i18n';
 import { Card, CardHeader, CardTitle, Badge, Button, Progress, Tabs, TabsList, TabsTrigger } from '@/components/ui';
@@ -20,7 +23,7 @@ const WIN_RATE_GRID = 'grid grid-cols-[1fr_repeat(5,minmax(0,1fr))] gap-0 px-6 p
 
 export function WhalesPage() {
   const { whales, listMode, isLoading, error, fetchWhales, setListMode } = useWhaleStore();
-  const { fetchFollowed, fetchSignals } = useWalletFollowStore();
+  const { fetchFollowed, fetchSignals, followed } = useWalletFollowStore();
   const { subscribe } = useWebSocket();
   const { t } = useI18n();
   const [pageTab, setPageTab] = useState<PageTab>('volume');
@@ -134,15 +137,29 @@ export function WhalesPage() {
       </Tabs>
 
       {isFollowTab ? (
-        <CopyFollowPanel />
+        <>
+          {followed.length === 0 && <WhaleFollowGuide />}
+          <CopyFollowPanel />
+        </>
       ) : (
         <DataState
           isLoading={isLoading}
           error={error}
-          isEmpty={!isLoading && !error && whales.length === 0}
+          isEmpty={!isLoading && !error && whales.length === 0 && !isWinRateMode}
           onRetry={() => loadWhales()}
           skeleton={<TableSkeleton rows={6} cols={6} />}
         >
+          {whales.length === 0 && isWinRateMode ? (
+            <EmptyStateGuide
+              icon={Trophy}
+              title={t('whales.winRateEmptyTitle')}
+              description={t('whales.winRateEmptyDesc')}
+              steps={[
+                t('whales.winRateEmptyStep1'),
+                t('whales.winRateEmptyStep2'),
+              ]}
+            />
+          ) : (
           <Card>
             <CardHeader className="h-auto flex flex-col gap-3 border-b px-6 py-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
               <div className="space-y-1">
@@ -186,7 +203,9 @@ export function WhalesPage() {
                       <div className={`${WIN_RATE_GRID} border-b border-border/50 hover:bg-muted/30 transition-colors`}>
                         <span className="flex items-center gap-1 font-mono text-xs text-left">
                           <FollowWalletButton address={w.address} />
-                          {w.address.slice(0, 6)}...{w.address.slice(-4)}
+                          <Link to={`/whales/${w.address}`} className="hover:underline">
+                            {w.address.slice(0, 6)}...{w.address.slice(-4)}
+                          </Link>
                         </span>
                         <span className="flex items-center justify-end gap-2">
                           <Progress value={w.winRate * 100} className="w-16" />
@@ -210,7 +229,9 @@ export function WhalesPage() {
                     <div className={`${VOLUME_GRID} border-b border-border/50 hover:bg-muted/30 transition-colors`}>
                       <span className="flex items-center gap-1 font-mono text-xs text-left">
                         <FollowWalletButton address={w.address} />
-                        {w.address.slice(0, 6)}...{w.address.slice(-4)}
+                        <Link to={`/whales/${w.address}`} className="hover:underline">
+                          {w.address.slice(0, 6)}...{w.address.slice(-4)}
+                        </Link>
                       </span>
                       <span className="text-right tabular-nums">
                         ${(w.totalVolume / 1000).toFixed(1)}K
@@ -238,6 +259,7 @@ export function WhalesPage() {
               </VirtualList>
             )}
           </Card>
+          )}
         </DataState>
       )}
 

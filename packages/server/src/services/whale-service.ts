@@ -1,11 +1,13 @@
-import type { Whale, AddressGraph } from '@polyrader/core';
+import type { Whale, AddressGraph, WhaleDetail } from '@polyrader/core';
 import { WhaleScoringEngine } from '@polyrader/core';
 import { WhaleRepository } from '@polyrader/infra';
 import { cacheGet, cacheSet } from '@polyrader/infra';
+import { WalletPerformanceService } from './wallet-performance-service';
 
 export class WhaleService {
   private engine = new WhaleScoringEngine();
   private whaleRepo = new WhaleRepository();
+  private performanceService = new WalletPerformanceService();
 
   async getWhales(options: {
     limit?: number;
@@ -57,6 +59,37 @@ export class WhaleService {
       await cacheSet(cacheKey, whale, 120);
     }
     return whale;
+  }
+
+  async getWhaleDetail(address: string): Promise<WhaleDetail | null> {
+    const normalized = address.toLowerCase();
+    let whale = await this.getWhale(normalized);
+    if (!whale) {
+      const trades = this.whaleRepo.getTrades(normalized, 1);
+      if (trades.length === 0) return null;
+      whale = this.engine.scoreWhale(
+        normalized,
+        this.whaleRepo.getTrades(normalized, 100),
+        trades.reduce((sum, t) => sum + t.amount, 0),
+        1,
+        0,
+        0,
+      );
+    } else {
+      const trades = this.whaleRepo.getTrades(normalized, 100);
+      const correlationData = this.whaleRepo.findCorrelationData(normalized);
+      whale = this.engine.scoreWhale(
+        normalized,
+        trades,
+        whale.totalVolume,
+        whale.activePositions,
+        whale.winRate,
+        whale.pnl,
+        correlationData,
+      );
+    }
+
+    return this.performanceService.buildWhaleDetail(normalized, whale);
   }
 
   async getAddressGraph(): Promise<AddressGraph> {

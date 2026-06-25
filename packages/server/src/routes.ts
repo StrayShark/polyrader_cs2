@@ -95,10 +95,12 @@ export function registerRoutes(app: Express): void {
   // Wallet follow & copy trading
   app.get('/api/whale-follow', (req, res) => walletFollowCtrl.listFollowed(req, res));
   app.post('/api/whale-follow', validate(followWalletBodySchema), (req, res) => walletFollowCtrl.follow(req, res));
+  app.put('/api/whale-follow/:address', validate(walletFollowUnfollowParamsSchema, 'params'), validate(followWalletBodySchema.partial(), 'body'), (req, res) => walletFollowCtrl.updateFollow(req, res));
   app.delete('/api/whale-follow/:address', validate(walletFollowUnfollowParamsSchema, 'params'), (req, res) => walletFollowCtrl.unfollow(req, res));
   app.get('/api/whale-follow/config', (req, res) => walletFollowCtrl.getConfig(req, res));
   app.put('/api/whale-follow/config', validate(walletCopyConfigBodySchema), (req, res) => walletFollowCtrl.updateConfig(req, res));
   app.get('/api/whale-follow/signals', validate(walletFollowQuerySchema, 'query'), (req, res) => walletFollowCtrl.listSignals(req, res));
+  app.get('/api/whale-follow/trades/summary', (req, res) => walletFollowCtrl.getCopyTradeSummary(req, res));
   app.get('/api/whale-follow/trades', validate(walletFollowQuerySchema, 'query'), (req, res) => walletFollowCtrl.listCopyTrades(req, res));
   app.post('/api/whale-follow/signals/:signalId/execute', validate(walletFollowSignalParamsSchema, 'params'), (req, res) => walletFollowCtrl.executeSignal(req, res));
 

@@ -20,3 +20,4 @@ export * from './debate-inference-engine';
 export * from './signal-backtest-engine';
 export * from './wallet-performance-engine';
 export * from './copy-signal-engine';
+export * from './copy-trade-settlement-engine';

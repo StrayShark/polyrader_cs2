@@ -1,6 +1,6 @@
 import type { DailyDashboard, DeviationAlert } from '@polyrader/core';
 import { DailyDashboardEngine, PredictionEngine } from '@polyrader/core';
-import { LLMRepository, cacheGet, cacheSet } from '@polyrader/infra';
+import { LLMRepository, WalletFollowRepository, cacheGet, cacheSet } from '@polyrader/infra';
 import { LLMClientFactory, CircuitBreakerLLMClient } from '@polyrader/infra';
 import { KeyManager } from '@polyrader/core';
 import type { LLMProvider } from '@polyrader/core';
@@ -20,6 +20,7 @@ export class DailyService {
   private marketService = new MarketService();
   private llmRepo = new LLMRepository();
   private whaleService = new WhaleService();
+  private walletFollowRepo = new WalletFollowRepository();
   private keyManager: KeyManager | null = null;
   private circuitBreakers = new Map<string, CircuitBreakerLLMClient>();
 
@@ -121,6 +122,21 @@ export class DailyService {
         }
       } catch {
         // whale service unavailable, continue with empty alerts
+      }
+
+      try {
+        for (const signal of this.walletFollowRepo.listRecentFollowedSignals(8)) {
+          whaleAlerts.push({
+            address: signal.leaderAddress,
+            marketId: signal.conditionId ?? signal.tokenId,
+            action: 'followed_buy',
+            amount: signal.leaderAmount,
+            timestamp: signal.createdAt,
+            suspiciousScore: Math.round((signal.leaderWinRate ?? 0.5) * 100),
+          });
+        }
+      } catch {
+        // followed copy signals optional
       }
 
       const dashboard = this.engine.generateDashboard(today, matchMarkets, deviations, whaleAlerts);

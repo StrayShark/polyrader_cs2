@@ -61,6 +61,82 @@ export class WalletFollowRepository {
     return result.changes > 0;
   }
 
+  updateFollow(
+    address: string,
+    partial: Partial<Pick<FollowedWallet, 'label' | 'minTradeUsd' | 'alertsEnabled' | 'autoCopyEnabled'>>,
+  ): FollowedWallet | null {
+    const current = this.getFollowed(address);
+    if (!current) return null;
+
+    return this.follow({
+      ...current,
+      label: partial.label ?? current.label,
+      minTradeUsd: partial.minTradeUsd ?? current.minTradeUsd,
+      alertsEnabled: partial.alertsEnabled ?? current.alertsEnabled,
+      autoCopyEnabled: partial.autoCopyEnabled ?? current.autoCopyEnabled,
+    });
+  }
+
+  /**
+   * Aggregate recent copy signals from followed wallets for signal fusion (Phase 4).
+   */
+  getFollowedMarketBias(conditionId: string, hours = 72): {
+    probability: number;
+    confidence: number;
+    signalCount: number;
+    totalBuyUsd: number;
+  } | null {
+    const rows = query<Record<string, unknown>>(
+      `SELECT s.leader_amount, s.leader_price, s.leader_win_rate, s.side
+       FROM wallet_copy_signals s
+       INNER JOIN followed_wallets fw ON fw.address = s.leader_address
+       WHERE s.condition_id = ?
+         AND s.status IN ('pending', 'executed')
+         AND s.side = 'buy'
+         AND s.created_at >= datetime('now', ?)
+       ORDER BY s.created_at DESC
+       LIMIT 20`,
+      conditionId,
+      `-${hours} hours`,
+    );
+    if (rows.length === 0) return null;
+
+    let weightedProb = 0;
+    let weightSum = 0;
+    let totalBuyUsd = 0;
+
+    for (const row of rows) {
+      const amount = Number(row.leader_amount);
+      const price = Number(row.leader_price);
+      const winRate = Number(row.leader_win_rate ?? 0.5);
+      const weight = Math.max(amount, 1) * Math.max(winRate, 0.35);
+      weightedProb += price * weight;
+      weightSum += weight;
+      totalBuyUsd += amount;
+    }
+
+    if (weightSum <= 0) return null;
+
+    const probability = weightedProb / weightSum;
+    const signalCount = rows.length;
+    const confidence = Math.min(0.85, 0.25 + signalCount * 0.08);
+
+    return { probability, confidence, signalCount, totalBuyUsd };
+  }
+
+  listRecentFollowedSignals(limit = 10): WalletCopySignal[] {
+    const rows = query<Record<string, unknown>>(
+      `SELECT s.*
+       FROM wallet_copy_signals s
+       INNER JOIN followed_wallets fw ON fw.address = s.leader_address
+       WHERE s.status IN ('pending', 'executed')
+       ORDER BY s.created_at DESC
+       LIMIT ?`,
+      limit,
+    );
+    return rows.map(this.mapSignalRow);
+  }
+
   getConfig(): WalletCopyConfig {
     const row = queryOne<Record<string, unknown>>(
       `SELECT * FROM wallet_copy_config WHERE id = 'default'`,
@@ -173,8 +249,8 @@ export class WalletFollowRepository {
     query(
       `INSERT INTO copy_trades (
          id, signal_id, mode, token_id, side, amount, price, status,
-         error_message, clob_order_id, executed_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         error_message, clob_order_id, executed_at, market_question, outcome
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       id,
       trade.signalId,
       trade.mode,
@@ -186,6 +262,8 @@ export class WalletFollowRepository {
       trade.errorMessage ?? null,
       trade.clobOrderId ?? null,
       trade.executedAt ?? null,
+      trade.marketQuestion ?? null,
+      trade.outcome ?? null,
     );
     return this.getCopyTrade(id)!;
   }
@@ -201,6 +279,51 @@ export class WalletFollowRepository {
       limit,
     );
     return rows.map(this.mapCopyTradeRow);
+  }
+
+  listUnsettledCopyTrades(limit = 500): CopyTrade[] {
+    const rows = query<Record<string, unknown>>(
+      `SELECT * FROM copy_trades
+       WHERE status = 'filled'
+         AND COALESCE(settlement_status, 'pending') = 'pending'
+       ORDER BY created_at ASC
+       LIMIT ?`,
+      limit,
+    );
+    return rows.map(this.mapCopyTradeRow);
+  }
+
+  updateCopyTradeSettlement(
+    id: string,
+    settlement: Pick<CopyTrade, 'pnl' | 'settlementStatus' | 'resolvedAt'>,
+  ): void {
+    query(
+      `UPDATE copy_trades
+       SET pnl = ?, settlement_status = ?, resolved_at = ?
+       WHERE id = ?`,
+      settlement.pnl ?? null,
+      settlement.settlementStatus ?? 'pending',
+      settlement.resolvedAt ?? null,
+      id,
+    );
+  }
+
+  getCopyTradeSummary(): { totalPnl: number; settled: number; wins: number; losses: number } {
+    const row = queryOne<{ total_pnl: number; settled: number; wins: number; losses: number }>(
+      `SELECT
+         COALESCE(SUM(CASE WHEN settlement_status IN ('won', 'lost') THEN pnl ELSE 0 END), 0) AS total_pnl,
+         COALESCE(SUM(CASE WHEN settlement_status IN ('won', 'lost') THEN 1 ELSE 0 END), 0) AS settled,
+         COALESCE(SUM(CASE WHEN settlement_status = 'won' THEN 1 ELSE 0 END), 0) AS wins,
+         COALESCE(SUM(CASE WHEN settlement_status = 'lost' THEN 1 ELSE 0 END), 0) AS losses
+       FROM copy_trades
+       WHERE status = 'filled'`,
+    );
+    return {
+      totalPnl: row?.total_pnl ?? 0,
+      settled: row?.settled ?? 0,
+      wins: row?.wins ?? 0,
+      losses: row?.losses ?? 0,
+    };
   }
 
   getDailyCopiedUsd(): number {
@@ -282,6 +405,11 @@ export class WalletFollowRepository {
       clobOrderId: row.clob_order_id as string | undefined,
       executedAt: row.executed_at as string | undefined,
       createdAt: row.created_at as string,
+      pnl: row.pnl === null || row.pnl === undefined ? undefined : Number(row.pnl),
+      settlementStatus: row.settlement_status as CopyTrade['settlementStatus'],
+      marketQuestion: row.market_question as string | undefined,
+      outcome: row.outcome as string | undefined,
+      resolvedAt: row.resolved_at as string | undefined,
     };
   }
 }

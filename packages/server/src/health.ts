@@ -1,4 +1,5 @@
 import { checkDbConnection, getCacheStats } from '@polyrader/infra';
+import { sharedWhaleIngestion } from './services/whale-ingestion-service';
 
 // Lazy reference to WebSocket server (set via setWsServer)
 let wssRef: { clients: Set<unknown> } | null = null;
@@ -15,6 +16,7 @@ interface HealthStatus {
     database: { status: string; latency?: number };
     cache: { status: string; size: number; maxSize: number };
     websocket: { status: string; connections: number };
+    whaleIngestion: { status: string; consecutiveFailures: number; lastIngestedCount: number; lastError?: string };
     externalApis: { status: string; checks: Array<{ name: string; status: string }> };
   };
 }
@@ -27,10 +29,15 @@ export async function checkHealth(): Promise<HealthStatus> {
   const wsInfo = checkWebSocket();
 
   const externalChecks = await checkExternalApis();
+  const ingestion = sharedWhaleIngestion.getStatus();
+  const ingestionStatus = ingestion.consecutiveFailures >= 3 ? 'error'
+    : ingestion.consecutiveFailures > 0 ? 'degraded'
+    : 'ok';
 
   // Determine overall status
-  const allOk = dbResult.status === 'ok' && wsInfo.status === 'ok' && externalChecks.status === 'ok';
-  const hasError = dbResult.status === 'error';
+  const allOk = dbResult.status === 'ok' && wsInfo.status === 'ok'
+    && externalChecks.status === 'ok' && ingestionStatus === 'ok';
+  const hasError = dbResult.status === 'error' || ingestionStatus === 'error';
 
   return {
     status: hasError ? 'unhealthy' : allOk ? 'healthy' : 'degraded',
@@ -40,6 +47,12 @@ export async function checkHealth(): Promise<HealthStatus> {
       database: dbResult,
       cache: { status: 'ok', ...cacheStats },
       websocket: wsInfo,
+      whaleIngestion: {
+        status: ingestionStatus,
+        consecutiveFailures: ingestion.consecutiveFailures,
+        lastIngestedCount: ingestion.lastIngestedCount,
+        lastError: ingestion.lastError ?? undefined,
+      },
       externalApis: externalChecks,
     },
   };
