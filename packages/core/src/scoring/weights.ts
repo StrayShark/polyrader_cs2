@@ -1,3 +1,11 @@
+import type {
+  SignalBehaviorWeights,
+  SignalRecommendationConfig,
+  SignalSourceWeights,
+  SignalTuningConfig,
+  SignalTuningConfigInput,
+} from '../types/index';
+
 /**
  * Factor weights for the 6-factor prediction model.
  * Can be tuned based on backtesting results.
@@ -46,6 +54,72 @@ export const MIN_CONFIDENCE_THRESHOLD = 0.3;
  * Minimum edge (probability difference from 50%) to bet.
  */
 export const MIN_EDGE_THRESHOLD = 0.05;
+
+/**
+ * Default signal aggregation weights. These are persisted as tunable config by
+ * the server, but kept here so tests and offline tools share one baseline.
+ */
+export const DEFAULT_SIGNAL_SOURCE_WEIGHTS: SignalSourceWeights = {
+  polymarket: 0.4,
+  prediction_model: 1,
+  hltv_odds: 0.6,
+  community: 0.6,
+  capital_flow: 0.55,
+  whale_flow: 0.55,
+  mean_reversion: 0.55,
+  market_behavior: 0.9,
+  ai_debate: 1.15,
+};
+
+export const DEFAULT_SIGNAL_BEHAVIOR_WEIGHTS: SignalBehaviorWeights = {
+  capitalWithOrderBook: 0.32,
+  capitalWithoutOrderBook: 0.1,
+  reversionWithHistory: 0.28,
+  reversionWithoutHistory: 0.12,
+  whaleWithFlow: 0.3,
+  whaleWithoutFlow: 0.05,
+  market: 0.1,
+};
+
+export const DEFAULT_SIGNAL_RECOMMENDATION_CONFIG: SignalRecommendationConfig = {
+  minEdge: 0.05,
+  bubbleMinEdge: 0.07,
+  minConfidence: 0.3,
+  bubbleRiskPenalty: 0.5,
+};
+
+export const DEFAULT_SIGNAL_TUNING_CONFIG: SignalTuningConfig = {
+  sourceWeights: DEFAULT_SIGNAL_SOURCE_WEIGHTS,
+  behaviorWeights: DEFAULT_SIGNAL_BEHAVIOR_WEIGHTS,
+  recommendation: DEFAULT_SIGNAL_RECOMMENDATION_CONFIG,
+};
+
+export function mergeSignalTuningConfig(input?: SignalTuningConfigInput | null): SignalTuningConfig {
+  return {
+    sourceWeights: mergeNumberConfig(DEFAULT_SIGNAL_SOURCE_WEIGHTS, input?.sourceWeights),
+    behaviorWeights: mergeNumberConfig(DEFAULT_SIGNAL_BEHAVIOR_WEIGHTS, input?.behaviorWeights),
+    recommendation: mergeNumberConfig(DEFAULT_SIGNAL_RECOMMENDATION_CONFIG, input?.recommendation),
+    updatedAt: input?.updatedAt,
+  };
+}
+
+function mergeNumberConfig<T extends object>(
+  defaults: T,
+  overrides?: Partial<T>,
+): T {
+  const merged = { ...defaults };
+  if (!overrides) return merged;
+
+  for (const key of Object.keys(defaults) as Array<keyof T>) {
+    const value = overrides[key];
+    const numeric = Number(value);
+    if (value !== undefined && Number.isFinite(numeric)) {
+      merged[key] = Math.max(0, numeric) as T[keyof T];
+    }
+  }
+
+  return merged;
+}
 
 /**
  * Lineup evaluation weights.

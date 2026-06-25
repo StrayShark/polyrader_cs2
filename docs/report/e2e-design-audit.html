@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>E2E Cursor 视觉审计</title>
+  <style>
+    body { font-family: Inter, system-ui, sans-serif; background: #f7f7f4; color: #26251e; padding: 32px; }
+    h1 { font-weight: 400; letter-spacing: -0.02em; }
+    .summary { display: flex; gap: 16px; margin-bottom: 24px; }
+    .pill { padding: 8px 14px; border: 1px solid #e6e5e0; border-radius: 8px; background: #fff; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e6e5e0; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid #efeee8; text-align: left; font-size: 14px; }
+    th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #807d72; }
+    .pass { color: #1f8a65; }
+    .fail { color: #cf2d56; }
+    .partial { color: #c08532; }
+    .exception { color: #807d72; }
+  </style>
+</head>
+<body>
+  <h1>E2E Cursor 视觉审计</h1>
+  <div class="summary">
+    <div class="pill">Pass: 29</div>
+    <div class="pill">Fail: 0</div>
+    <div class="pill">Partial: 9</div>
+    <div class="pill">Exception: 1</div>
+  </div>
+  <table>
+    <thead><tr><th>Page</th><th>Module</th><th>Theme</th><th>Status</th><th>Note</th></tr></thead>
+    <tbody><tr><td>global</td><td>background</td><td>light</td><td class="pass">pass</td><td>got rgb(247, 247, 244)</td></tr>
+<tr><td>global</td><td>foreground</td><td>light</td><td class="pass">pass</td><td>got rgb(38, 37, 30)</td></tr>
+<tr><td>global</td><td>primary</td><td>light</td><td class="pass">pass</td><td>got rgb(245, 78, 0)</td></tr>
+<tr><td>global</td><td>border</td><td>light</td><td class="pass">pass</td><td>got rgb(230, 229, 224)</td></tr>
+<tr><td>global</td><td>background</td><td>dark</td><td class="pass">pass</td><td>got rgb(26, 25, 22)</td></tr>
+<tr><td>global</td><td>foreground</td><td>dark</td><td class="pass">pass</td><td>got rgb(247, 247, 244)</td></tr>
+<tr><td>global</td><td>primary</td><td>dark</td><td class="pass">pass</td><td>got rgb(245, 78, 0)</td></tr>
+<tr><td>global</td><td>border</td><td>dark</td><td class="pass">pass</td><td>got rgb(61, 59, 52)</td></tr>
+<tr><td>global</td><td>background</td><td>matrix</td><td class="pass">pass</td><td>got rgb(13, 17, 23)</td></tr>
+<tr><td>global</td><td>foreground</td><td>matrix</td><td class="pass">pass</td><td>got rgb(201, 209, 217)</td></tr>
+<tr><td>global</td><td>primary</td><td>matrix</td><td class="exception">exception</td><td>Matrix green primary allowed: rgb(0, 255, 65)</td></tr>
+<tr><td>global</td><td>border</td><td>matrix</td><td class="pass">pass</td><td>got rgb(48, 54, 61)</td></tr>
+<tr><td>dashboard</td><td>card-no-shadow</td><td>light</td><td class="pass">pass</td><td>none</td></tr>
+<tr><td>dashboard</td><td>primary-button-height</td><td>light</td><td class="partial">partial</td><td>26px</td></tr>
+<tr><td>dashboard</td><td>body-font-inter</td><td>light</td><td class="pass">pass</td><td>Inter, system-ui, -apple-system, sans-serif</td></tr>
+<tr><td>signals</td><td>card-no-shadow</td><td>light</td><td class="pass">pass</td><td>none</td></tr>
+<tr><td>signals</td><td>primary-button-height</td><td>light</td><td class="partial">partial</td><td>26px</td></tr>
+<tr><td>signals</td><td>body-font-inter</td><td>light</td><td class="pass">pass</td><td>Inter, system-ui, -apple-system, sans-serif</td></tr>
+<tr><td>ai-config</td><td>card-no-shadow</td><td>light</td><td class="pass">pass</td><td>none</td></tr>
+<tr><td>ai-config</td><td>primary-button-height</td><td>light</td><td class="partial">partial</td><td>26px</td></tr>
+<tr><td>ai-config</td><td>body-font-inter</td><td>light</td><td class="pass">pass</td><td>Inter, system-ui, -apple-system, sans-serif</td></tr>
+<tr><td>dashboard</td><td>card-no-shadow</td><td>dark</td><td class="pass">pass</td><td>none</td></tr>
+<tr><td>dashboard</td><td>primary-button-height</td><td>dark</td><td class="partial">partial</td><td>26px</td></tr>
+<tr><td>dashboard</td><td>body-font-inter</td><td>dark</td><td class="pass">pass</td><td>Inter, system-ui, -apple-system, sans-serif</td></tr>
+<tr><td>signals</td><td>card-no-shadow</td><td>dark</td><td class="pass">pass</td><td>none</td></tr>
+<tr><td>signals</td><td>primary-button-height</td><td>dark</td><td class="partial">partial</td><td>26px</td></tr>
+<tr><td>signals</td><td>body-font-inter</td><td>dark</td><td class="pass">pass</td><td>Inter, system-ui, -apple-system, sans-serif</td></tr>
+<tr><td>ai-config</td><td>card-no-shadow</td><td>dark</td><td class="pass">pass</td><td>none</td></tr>
+<tr><td>ai-config</td><td>primary-button-height</td><td>dark</td><td class="partial">partial</td><td>26px</td></tr>
+<tr><td>ai-config</td><td>body-font-inter</td><td>dark</td><td class="pass">pass</td><td>Inter, system-ui, -apple-system, sans-serif</td></tr>
+<tr><td>dashboard</td><td>card-no-shadow</td><td>matrix</td><td class="pass">pass</td><td>none</td></tr>
+<tr><td>dashboard</td><td>primary-button-height</td><td>matrix</td><td class="partial">partial</td><td>26px</td></tr>
+<tr><td>dashboard</td><td>body-font-inter</td><td>matrix</td><td class="pass">pass</td><td>Inter, system-ui, -apple-system, sans-serif</td></tr>
+<tr><td>signals</td><td>card-no-shadow</td><td>matrix</td><td class="pass">pass</td><td>none</td></tr>
+<tr><td>signals</td><td>primary-button-height</td><td>matrix</td><td class="partial">partial</td><td>26px</td></tr>
+<tr><td>signals</td><td>body-font-inter</td><td>matrix</td><td class="pass">pass</td><td>Inter, system-ui, -apple-system, sans-serif</td></tr>
+<tr><td>ai-config</td><td>card-no-shadow</td><td>matrix</td><td class="pass">pass</td><td>none</td></tr>
+<tr><td>ai-config</td><td>primary-button-height</td><td>matrix</td><td class="partial">partial</td><td>26px</td></tr>
+<tr><td>ai-config</td><td>body-font-inter</td><td>matrix</td><td class="pass">pass</td><td>Inter, system-ui, -apple-system, sans-serif</td></tr></tbody>
+  </table>
+</body>
+</html>

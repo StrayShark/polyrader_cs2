@@ -261,6 +261,8 @@ export interface LLMAnalysisResult {
   tokenUsage: TokenUsage;
   error?: string;
   variantId?: string;
+  /** Optional chain-of-thought / reasoning trace returned by some models (e.g. Qwen, GLM, MiniMax). */
+  thinkingProcess?: string;
 }
 
 export interface TokenUsage {
@@ -311,6 +313,13 @@ export interface Whale {
   suspiciousScore: SuspiciousScore;
   recentTrades: WhaleTrade[];
   lastActive: string;
+  /** Settled buy trades used for win-rate calculation */
+  settledBets?: number;
+  wins?: number;
+  losses?: number;
+  roi?: number;
+  totalWagered?: number;
+  performanceUpdatedAt?: string;
 }
 
 export interface SuspiciousScore {
@@ -329,6 +338,87 @@ export interface WhaleTrade {
   price: number;
   timestamp: string;
   type: 'buy' | 'sell';
+}
+
+export interface FollowedWallet {
+  address: string;
+  label?: string;
+  minTradeUsd: number;
+  alertsEnabled: boolean;
+  autoCopyEnabled: boolean;
+  createdAt: string;
+  /** Enriched from whales table when listing */
+  winRate?: number;
+  settledBets?: number;
+  pnl?: number;
+}
+
+export type CopyTradeMode = 'paper' | 'live';
+
+export interface WalletCopyConfig {
+  enabled: boolean;
+  mode: CopyTradeMode;
+  copyRatio: number;
+  maxOrderUsd: number;
+  minLeaderTradeUsd: number;
+  maxSlippage: number;
+  cs2Only: boolean;
+  minLeaderWinRate: number;
+  minLeaderSamples: number;
+  dailyCapUsd: number;
+  requireUserConfirm: boolean;
+  /** Leader trade must be at least this share of market 24h volume (0.02 = 2%) */
+  minMarketVolumeShare: number;
+  /** Market must have at least this much 24h volume to qualify */
+  minMarketVolumeUsd: number;
+  updatedAt?: string;
+}
+
+export type WalletCopySignalStatus = 'pending' | 'executed' | 'skipped' | 'failed';
+
+export interface WalletCopySignal {
+  id: string;
+  leaderAddress: string;
+  leaderTxHash: string;
+  tokenId: string;
+  conditionId?: string;
+  marketQuestion?: string;
+  outcome?: string;
+  side: 'buy' | 'sell';
+  leaderAmount: number;
+  leaderPrice: number;
+  suggestedAmount?: number;
+  leaderWinRate?: number;
+  leaderSettledBets?: number;
+  status: WalletCopySignalStatus;
+  skipReason?: string;
+  /** Leader trade size / market 24h volume */
+  leaderVolumeShare?: number;
+  createdAt: string;
+}
+
+export type CopyTradeStatus = 'pending' | 'filled' | 'failed' | 'rejected';
+
+export interface CopyTrade {
+  id: string;
+  signalId: string;
+  mode: CopyTradeMode;
+  tokenId: string;
+  side: 'buy' | 'sell';
+  amount: number;
+  price: number;
+  status: CopyTradeStatus;
+  errorMessage?: string;
+  clobOrderId?: string;
+  executedAt?: string;
+  createdAt: string;
+}
+
+export interface CopyTradeSizingResult {
+  amount: number;
+  price: number;
+  accepted: boolean;
+  reason: string;
 }
 
 /**
@@ -377,6 +467,128 @@ export interface AddressGraph {
 }
 
 // ============================================================
+// Polymarket Data & Account
+// ============================================================
+
+export interface PolymarketHolder {
+  address: string;
+  outcome?: string;
+  tokenId?: string;
+  shares: number;
+  value: number;
+  avgPrice?: number;
+  percentage?: number;
+}
+
+export interface PolymarketMarketPosition {
+  address: string;
+  marketId: string;
+  outcome: string;
+  tokenId?: string;
+  shares: number;
+  value: number;
+  avgPrice?: number;
+  currentPrice?: number;
+  unrealizedPnl?: number;
+}
+
+export interface PolymarketUserPosition {
+  marketId: string;
+  conditionId?: string;
+  question: string;
+  outcome: string;
+  tokenId?: string;
+  shares: number;
+  value: number;
+  avgPrice?: number;
+  currentPrice?: number;
+  initialValue?: number;
+  cashPnl?: number;
+  percentPnl?: number;
+  endDate?: string;
+}
+
+export interface PolymarketUserActivity {
+  id: string;
+  marketId?: string;
+  question?: string;
+  outcome?: string;
+  type: string;
+  side?: 'buy' | 'sell';
+  price?: number;
+  size?: number;
+  value?: number;
+  timestamp: string;
+  txHash?: string;
+}
+
+export interface PolymarketUserTrade {
+  id: string;
+  marketId?: string;
+  assetId?: string;
+  outcome?: string;
+  side?: 'buy' | 'sell';
+  price: number;
+  size: number;
+  value: number;
+  fee?: number;
+  status?: string;
+  timestamp: string;
+  txHash?: string;
+}
+
+export interface PolymarketOpenOrder {
+  id: string;
+  marketId?: string;
+  assetId?: string;
+  outcome?: string;
+  side?: 'buy' | 'sell';
+  price: number;
+  originalSize: number;
+  sizeMatched: number;
+  remainingSize: number;
+  status?: string;
+  createdAt?: string;
+  expiration?: string;
+}
+
+export interface PolymarketBalance {
+  assetType: string;
+  tokenId?: string;
+  balance: number;
+  allowance?: number;
+  raw?: Record<string, unknown>;
+}
+
+export interface PolymarketAccountStatus {
+  hasApiCredentials: boolean;
+  hasAddress: boolean;
+  address?: string;
+  canReadPrivate: boolean;
+  message?: string;
+}
+
+export interface PolymarketAccountDiagnostic {
+  source: 'data-api' | 'clob-api';
+  operation: string;
+  ok: boolean;
+  message?: string;
+  checkedAt: string;
+}
+
+export interface PolymarketAccountOverview {
+  status: PolymarketAccountStatus;
+  totalPositionValue: number;
+  balances: PolymarketBalance[];
+  positions: PolymarketUserPosition[];
+  activity: PolymarketUserActivity[];
+  trades: PolymarketUserTrade[];
+  openOrders: PolymarketOpenOrder[];
+  diagnostics: PolymarketAccountDiagnostic[];
+  updatedAt: string;
+}
+
+// ============================================================
 // Daily Dashboard
 // ============================================================
 
@@ -400,6 +612,8 @@ export interface ScoredMatch {
   whaleScore: number;
   tierScore: number;
   recommendation: 'high' | 'medium' | 'low';
+  llmPrediction?: number;   // 0-1, from lightweight LLM pre-analysis
+  llmSource?: string;       // provider name used for pre-analysis
 }
 
 export interface DeviationAlert {
@@ -409,6 +623,7 @@ export interface DeviationAlert {
   predictedProb: number;
   deviation: number;
   direction: 'overvalued' | 'undervalued';
+  llmProb?: number;         // LLM pre-analysis probability
 }
 
 export interface WhaleAlert {
@@ -539,6 +754,66 @@ export interface EquityCurvePoint {
 }
 
 // ============================================================
+// Market Behavior & AI Debate
+// ============================================================
+
+export interface OrderBookLevel {
+  price: number;
+  size: number;
+}
+
+export interface OrderBookSnapshot {
+  bids: OrderBookLevel[];
+  asks: OrderBookLevel[];
+}
+
+export interface MarketBehaviorResult {
+  probability: number;
+  confidence: number;
+  capitalWeightedProb: number;
+  meanReversionProb: number;
+  whaleAdjustedProb: number;
+  smartMoneyProb?: number;
+  holderWeightedProb?: number;
+  zScore: number;
+  bubbleScore: number;
+  concentrationRisk: number;
+  holderConcentrationRisk?: number;
+  holderDirectionalBias?: number;
+  topHolders?: PolymarketHolder[];
+  orderBookImbalance?: number;
+  spread?: number;
+  slippageRisk?: number;
+  topDepth?: number;
+  meanReversionSuppressed?: boolean;
+  direction: 'buy_yes' | 'buy_no' | 'neutral';
+  reasons: string[];
+  updatedAt: string;
+}
+
+export interface DebateArgument {
+  stance: 'yes' | 'no';
+  probability: number;
+  confidence: number;
+  evidence: string[];
+  reasoning: string;
+  risks: string[];
+}
+
+export interface DebateInferenceResult {
+  marketId: string;
+  yesCase: DebateArgument;
+  noCase: DebateArgument;
+  judgeProbability: number;
+  calibratedProbability: number;
+  confidence: number;
+  marketMispricing: number;
+  verdict: 'buy_yes' | 'buy_no' | 'skip';
+  evidenceStrength: number;
+  generatedAt: string;
+}
+
+// ============================================================
 // Signals
 // ============================================================
 
@@ -546,16 +821,138 @@ export interface SignalComparison {
   marketId: string;
   polymarketProb: number;
   predictedProb: number;
+  finalProb?: number;
+  finalConfidence?: number;
+  edge?: number;
+  riskAdjustedEdge?: number;
+  recommendation?: 'buy_yes' | 'buy_no' | 'skip';
   deviation: number;
   signals: SignalSource[];
+  marketBehavior?: MarketBehaviorResult;
+  aiDebate?: DebateInferenceResult;
   arbitrageOpportunity: boolean;
 }
 
+export interface SignalSnapshot {
+  id?: number;
+  marketId: string;
+  question: string;
+  marketProb: number;
+  predictedProb: number;
+  behaviorProb?: number;
+  aiDebateProb?: number;
+  finalProb: number;
+  edge: number;
+  riskAdjustedEdge: number;
+  recommendation: 'buy_yes' | 'buy_no' | 'skip';
+  resolvedOutcome?: string;
+  resolvedPrice?: number;
+  signals: SignalSource[];
+  marketBehavior?: MarketBehaviorResult;
+  aiDebate?: DebateInferenceResult;
+  createdAt: string;
+}
+
+export type SignalSourceKind =
+  | 'polymarket'
+  | 'prediction_model'
+  | 'hltv_odds'
+  | 'community'
+  | 'capital_flow'
+  | 'whale_flow'
+  | 'mean_reversion'
+  | 'market_behavior'
+  | 'ai_debate';
+
 export interface SignalSource {
-  source: 'polymarket' | 'prediction_model' | 'hltv_odds' | 'community';
+  source: SignalSourceKind;
   probability: number;
   confidence: number;
   lastUpdated: string;
+  details?: Record<string, string | number | boolean | null>;
+}
+
+export type SignalSourceWeights = Record<SignalSourceKind, number>;
+
+export interface SignalBehaviorWeights {
+  capitalWithOrderBook: number;
+  capitalWithoutOrderBook: number;
+  reversionWithHistory: number;
+  reversionWithoutHistory: number;
+  whaleWithFlow: number;
+  whaleWithoutFlow: number;
+  market: number;
+}
+
+export interface SignalRecommendationConfig {
+  minEdge: number;
+  bubbleMinEdge: number;
+  minConfidence: number;
+  bubbleRiskPenalty: number;
+}
+
+export interface SignalTuningConfig {
+  sourceWeights: SignalSourceWeights;
+  behaviorWeights: SignalBehaviorWeights;
+  recommendation: SignalRecommendationConfig;
+  updatedAt?: string;
+}
+
+export interface SignalTuningConfigInput {
+  sourceWeights?: Partial<SignalSourceWeights>;
+  behaviorWeights?: Partial<SignalBehaviorWeights>;
+  recommendation?: Partial<SignalRecommendationConfig>;
+  updatedAt?: string;
+}
+
+export type SignalBacktestSourceKind =
+  | 'market'
+  | 'prediction_model'
+  | 'market_behavior'
+  | 'ai_debate'
+  | 'final';
+
+export interface SignalCalibrationBucket {
+  lowerBound: number;
+  upperBound: number;
+  count: number;
+  avgPredicted: number;
+  actualRate: number;
+  brierScore: number;
+}
+
+export interface SignalBacktestMetric {
+  source: SignalBacktestSourceKind;
+  label: string;
+  sampleSize: number;
+  brierScore: number;
+  accuracy: number;
+  calibrationError: number;
+  avgPredicted: number;
+  actualRate: number;
+  bets: number;
+  wins: number;
+  losses: number;
+  totalPnl: number;
+  roi: number;
+  maxDrawdown: number;
+  avgEdge: number;
+  currentWeight?: number;
+  suggestedWeight?: number;
+  buckets: SignalCalibrationBucket[];
+}
+
+export interface SignalBacktestSummary {
+  sampleSize: number;
+  resolvedMarkets: number;
+  startDate?: string;
+  endDate?: string;
+  minEdge: number;
+  metrics: SignalBacktestMetric[];
+  bestBrierSource?: SignalBacktestSourceKind;
+  bestRoiSource?: SignalBacktestSourceKind;
+  generatedAt: string;
+  tuningConfig: SignalTuningConfig;
 }
 
 // ============================================================
@@ -653,4 +1050,85 @@ export interface AllocationPlan {
   reasoning: string;
   generatedAt: string;
   source: 'algorithmic' | 'llm';
+}
+
+// ============================================================
+// Analysis Filter Configuration
+// ============================================================
+
+/**
+ * Configuration for the batch analysis cron job.
+ * Controls which matches are eligible for automatic LLM analysis.
+ */
+export interface AnalysisFilterConfig {
+  /** Minimum event tier to analyze ('S' | 'A' | 'B' | 'C'). */
+  minTier: 'S' | 'A' | 'B' | 'C';
+  /** Master toggle for the 6-hour batch analysis cron. */
+  enabled: boolean;
+  /** Minimum HLTV star rating (0-5) required to trigger analysis. */
+  minStars: number;
+  /** If true, only LAN events are analyzed (skips all online). */
+  lanOnly: boolean;
+  /** If true, skip matches without a confirmed 5-man roster. */
+  skipIfNoRoster: boolean;
+  /** How many months of match history to fetch for analysis (3-6, default 3). */
+  historyMonths: number;
+  /** Minimum market volume in USD required to trigger analysis (default 10000). */
+  minVolumeUsd: number;
+  /** Last update timestamp. */
+  updatedAt: string;
+}
+
+// ============================================================
+// Background Task Monitor
+// ============================================================
+
+export type BackgroundTaskStatus = 'queued' | 'running' | 'success' | 'failed';
+
+export type BackgroundTaskCategory = 'market' | 'esports' | 'ai' | 'whale' | 'signal' | 'system';
+
+export type BackgroundTaskTrigger = 'scheduled' | 'manual' | 'startup';
+
+export interface BackgroundTaskLog {
+  ts: string;
+  level: 'info' | 'warn' | 'error';
+  message: string;
+}
+
+export interface BackgroundTask {
+  id: string;
+  jobKey: string;
+  name: string;
+  category: BackgroundTaskCategory;
+  trigger: BackgroundTaskTrigger;
+  status: BackgroundTaskStatus;
+  progress: number;
+  progressLabel?: string;
+  startedAt: string;
+  finishedAt?: string;
+  durationMs?: number;
+  error?: string;
+  logs: BackgroundTaskLog[];
+  metadata?: Record<string, unknown>;
+}
+
+export interface ScheduledJobDefinition {
+  jobKey: string;
+  name: string;
+  category: BackgroundTaskCategory;
+  cron: string;
+  scheduleLabel: string;
+  description?: string;
+}
+
+export interface TaskMonitorSnapshot {
+  running: BackgroundTask[];
+  recent: BackgroundTask[];
+  scheduledJobs: ScheduledJobDefinition[];
+  stats: {
+    runningCount: number;
+    completedToday: number;
+    failedToday: number;
+  };
+  updatedAt: string;
 }

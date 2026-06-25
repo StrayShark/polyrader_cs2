@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { SimulatedBettingEngine } from './simulated-betting-engine';
+import type { LLMAnalysisResult, SimulationConfig } from '../types/index';
 
 describe('SimulatedBettingEngine', () => {
   const engine = new SimulatedBettingEngine();
@@ -47,6 +48,50 @@ describe('SimulatedBettingEngine', () => {
         result: 'pending',
         profitLoss: 0,
       });
+    });
+  });
+
+  describe('placeBetFromAnalysis', () => {
+    const config: SimulationConfig = {
+      id: 'default',
+      enabled: true,
+      initialCapital: 10_000,
+      betStrategy: 'kelly',
+      betAmount: 100,
+      maxBetFraction: 0.1,
+      minConfidence: 0.5,
+      minEdge: 0.03,
+      oddsSource: 'market',
+      participatingProviders: [],
+      autoSettle: false,
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+    };
+
+    const analysis: LLMAnalysisResult = {
+      provider: 'openai',
+      model: 'gpt-4o',
+      winProbability: { teamA: 0.35, teamB: 0.65 },
+      confidence: 0.8,
+      reasoning: 'Team B edge',
+      keyFactors: [],
+      riskAssessment: '',
+      latency: 100,
+      tokenUsage: { promptTokens: 10, completionTokens: 10, totalTokens: 20 },
+    };
+
+    it('uses the opposite market probability when betting Team B', () => {
+      const bet = engine.placeBetFromAnalysis('match-1', analysis, config, 0.5, 'Team A', 'Team B');
+
+      expect(bet).not.toBeNull();
+      expect(bet!.team).toBe('Team B');
+      expect(bet!.odds).toBe(2);
+    });
+
+    it('skips Team B bets when the edge is not above the side-specific market price', () => {
+      const bet = engine.placeBetFromAnalysis('match-1', analysis, config, 0.3, 'Team A', 'Team B');
+
+      expect(bet).toBeNull();
     });
   });
 });

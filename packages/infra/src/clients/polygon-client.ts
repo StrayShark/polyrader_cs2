@@ -1,4 +1,4 @@
-const POLYGON_RPC_URL = process.env.POLYGON_RPC_URL ?? 'https://polygon-rpc.com';
+const POLYGON_RPC_URL = process.env.POLYGON_RPC_URL ?? 'https://polygon-bor-rpc.publicnode.com';
 
 interface RpcResponse {
   jsonrpc: string;

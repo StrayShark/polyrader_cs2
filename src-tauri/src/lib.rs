@@ -202,8 +202,14 @@ fn start_sidecar(app: &tauri::AppHandle) -> Result<u16, String> {
     // In development, use npx tsx to run the server from source.
     // In production, use the bun-compiled standalone binary (shipped as a Tauri resource).
     let mut cmd = if cfg!(debug_assertions) {
+        // cargo tauri dev runs with cwd = src-tauri; server path is relative to repo root.
+        let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .map(PathBuf::from)
+            .ok_or_else(|| "Failed to resolve project root".to_string())?;
         let mut c = Command::new("npx");
-        c.args(["tsx", "packages/server/src/index.ts"]);
+        c.current_dir(&project_root)
+            .args(["tsx", "packages/server/src/index.ts"]);
         c
     } else {
         // Resolve the bundled server binary from Tauri's resource directory

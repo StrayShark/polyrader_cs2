@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Key, Wifi, BarChart3, Eye, EyeOff, RefreshCw, Loader2 } from 'lucide-react';
 import { useLLMStore } from '../stores/llm-store';
+import { BackgroundTasksPanel } from '../components/background-tasks-panel';
+import { BackupPanel } from '../components/BackupPanel';
 import { DataState } from '../components/DataState';
 import { TableSkeleton } from '../components/Skeletons';
 import { useI18n } from '../hooks/use-i18n';
@@ -46,6 +48,10 @@ export function AiConfigPage() {
           {t('common.refresh')}
         </Button>
       </div>
+
+      <BackgroundTasksPanel />
+
+      <BackupPanel />
 
       <DataState
         isLoading={isLoading}

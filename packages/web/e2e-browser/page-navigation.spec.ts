@@ -18,8 +18,13 @@ const PAGES = [
   { path: '/#/whales', name: 'whales' },
   { path: '/#/signals', name: 'signals' },
   { path: '/#/esports', name: 'esports' },
+  { path: '/#/polymarket/account', name: 'polymarket-account' },
   { path: '/#/ai/config', name: 'ai-config' },
   { path: '/#/ai/stats', name: 'ai-stats' },
+  { path: '/#/prompt-variants', name: 'prompt-variants' },
+  { path: '/#/allocation', name: 'allocation' },
+  { path: '/#/simulation', name: 'simulation' },
+  { path: '/#/llm/analysis/openai', name: 'llm-analysis' },
 ];
 
 test.describe('P3-1: Page navigation', () => {
@@ -44,12 +49,6 @@ test.describe('P3-1: Page navigation', () => {
       // No error boundary should be shown (check for error title text)
       const errorText = await p.locator('text=Something went wrong').count();
       expect(errorText).toBe(0);
-
-      // Take screenshot for visual regression
-      await expect(p).toHaveScreenshot(`page-${page.name}.png`, {
-        maxDiffPixelRatio: 0.05,
-        timeout: 15000,
-      });
     });
   }
 

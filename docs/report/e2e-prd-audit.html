@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>E2E PRD 功能审计</title>
+  <style>
+    body { font-family: Inter, system-ui, sans-serif; background: #f7f7f4; color: #26251e; padding: 32px; }
+    h1 { font-weight: 400; letter-spacing: -0.02em; }
+    .summary { display: flex; gap: 16px; margin-bottom: 24px; }
+    .pill { padding: 8px 14px; border: 1px solid #e6e5e0; border-radius: 8px; background: #fff; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e6e5e0; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid #efeee8; text-align: left; font-size: 14px; }
+    th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #807d72; }
+    .pass { color: #1f8a65; }
+    .fail { color: #cf2d56; }
+    .partial { color: #c08532; }
+    .exception { color: #807d72; }
+  </style>
+</head>
+<body>
+  <h1>E2E PRD 功能审计</h1>
+  <div class="summary">
+    <div class="pill">Pass: 35</div>
+    <div class="pill">Fail: 0</div>
+    <div class="pill">Partial: 0</div>
+    <div class="pill">Exception: 0</div>
+  </div>
+  <table>
+    <thead><tr><th>Page</th><th>Module</th><th>Theme</th><th>Status</th><th>Note</th></tr></thead>
+    <tbody><tr><td>dashboard</td><td>page-render</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>dashboard</td><td>stats-cards</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>dashboard</td><td>heatmap</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>dashboard</td><td>anomaly-table</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>dashboard</td><td>active-markets</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>daily</td><td>page-render</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>daily</td><td>overview-cards</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>daily</td><td>match-table</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>match-detail</td><td>page-render</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>match-detail</td><td>price-chart</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>match-detail</td><td>llm-consensus</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>match-detail</td><td>orderbook</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>match-detail</td><td>decision-area</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>whales</td><td>page-render</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>whales</td><td>leaderboard</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>esports</td><td>page-render</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>esports</td><td>rankings</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>esports</td><td>schedule</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>signals</td><td>page-render</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>signals</td><td>signal-table</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>signals</td><td>backtest-panel</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>polymarket-account</td><td>page-render</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>polymarket-account</td><td>connection-status</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>polymarket-account</td><td>positions</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>ai-config</td><td>page-render</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>ai-config</td><td>api-keys</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>ai-config</td><td>background-tasks</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>ai-stats</td><td>page-render</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>ai-stats</td><td>leaderboard</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>llm-analysis</td><td>page-render</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>llm-analysis</td><td>equity-curve</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>llm-analysis</td><td>team-breakdown</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>prompt-variants</td><td>page-render</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>allocation</td><td>page-render</td><td>-</td><td class="pass">pass</td><td></td></tr>
+<tr><td>simulation</td><td>page-render</td><td>-</td><td class="pass">pass</td><td></td></tr></tbody>
+  </table>
+</body>
+</html>

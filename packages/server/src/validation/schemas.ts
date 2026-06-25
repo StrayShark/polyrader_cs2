@@ -59,6 +59,51 @@ export const calibrationParamsSchema = z.object({
 export const whaleQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
   minVolume: z.coerce.number().min(0).optional(),
+  sort: z.enum(['volume', 'win_rate']).default('volume'),
+  minSamples: z.coerce.number().int().min(0).max(1000).default(5),
+  minWinRate: z.coerce.number().min(0).max(1).optional(),
+});
+
+export const whaleLeaderboardQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  minSamples: z.coerce.number().int().min(1).max(1000).default(20),
+  minWinRate: z.coerce.number().min(0).max(1).default(0.5),
+});
+
+export const followWalletBodySchema = z.object({
+  address: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address'),
+  label: z.string().max(64).optional(),
+  minTradeUsd: z.coerce.number().min(0).max(1_000_000).optional(),
+  alertsEnabled: z.boolean().optional(),
+  autoCopyEnabled: z.boolean().optional(),
+});
+
+export const walletCopyConfigBodySchema = z.object({
+  enabled: z.boolean().optional(),
+  mode: z.enum(['paper']).optional(),
+  copyRatio: z.coerce.number().min(0.01).max(1).optional(),
+  maxOrderUsd: z.coerce.number().min(1).max(100_000).optional(),
+  minLeaderTradeUsd: z.coerce.number().min(0).max(1_000_000).optional(),
+  maxSlippage: z.coerce.number().min(0).max(1).optional(),
+  cs2Only: z.boolean().optional(),
+  minLeaderWinRate: z.coerce.number().min(0).max(1).optional(),
+  minLeaderSamples: z.coerce.number().int().min(0).max(10_000).optional(),
+  dailyCapUsd: z.coerce.number().min(1).max(1_000_000).optional(),
+  minMarketVolumeShare: z.coerce.number().min(0).max(1).optional(),
+  minMarketVolumeUsd: z.coerce.number().min(0).max(10_000_000).optional(),
+});
+
+export const walletFollowQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  status: z.enum(['pending', 'executed', 'skipped', 'failed']).optional(),
+});
+
+export const walletFollowSignalParamsSchema = z.object({
+  signalId: z.string().uuid('Invalid signal id'),
+});
+
+export const walletFollowUnfollowParamsSchema = z.object({
+  address: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address'),
 });
 
 export const whaleParamsSchema = z.object({
@@ -72,11 +117,59 @@ export const teamParamsSchema = z.object({
   teamId: z.string().min(1, 'teamId is required'),
 });
 
+export const matchParamsSchema = z.object({
+  matchId: z.string().min(1, 'matchId is required'),
+});
+
 // ============================================================
 // Signals schemas
 // ============================================================
 export const signalParamsSchema = z.object({
   marketId: z.string().min(1, 'marketId is required'),
+});
+
+export const signalSnapshotQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(500).default(50),
+});
+
+export const signalBacktestQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(5000).default(1000),
+  minEdge: z.coerce.number().min(0).max(0.5).optional(),
+});
+
+const signalSourceWeightsSchema = z.object({
+  polymarket: z.coerce.number().min(0).max(5).optional(),
+  prediction_model: z.coerce.number().min(0).max(5).optional(),
+  hltv_odds: z.coerce.number().min(0).max(5).optional(),
+  community: z.coerce.number().min(0).max(5).optional(),
+  capital_flow: z.coerce.number().min(0).max(5).optional(),
+  whale_flow: z.coerce.number().min(0).max(5).optional(),
+  mean_reversion: z.coerce.number().min(0).max(5).optional(),
+  market_behavior: z.coerce.number().min(0).max(5).optional(),
+  ai_debate: z.coerce.number().min(0).max(5).optional(),
+});
+
+const signalBehaviorWeightsSchema = z.object({
+  capitalWithOrderBook: z.coerce.number().min(0).max(5).optional(),
+  capitalWithoutOrderBook: z.coerce.number().min(0).max(5).optional(),
+  reversionWithHistory: z.coerce.number().min(0).max(5).optional(),
+  reversionWithoutHistory: z.coerce.number().min(0).max(5).optional(),
+  whaleWithFlow: z.coerce.number().min(0).max(5).optional(),
+  whaleWithoutFlow: z.coerce.number().min(0).max(5).optional(),
+  market: z.coerce.number().min(0).max(5).optional(),
+});
+
+const signalRecommendationSchema = z.object({
+  minEdge: z.coerce.number().min(0).max(0.5).optional(),
+  bubbleMinEdge: z.coerce.number().min(0).max(0.5).optional(),
+  minConfidence: z.coerce.number().min(0).max(1).optional(),
+  bubbleRiskPenalty: z.coerce.number().min(0).max(5).optional(),
+});
+
+export const signalTuningConfigBodySchema = z.object({
+  sourceWeights: signalSourceWeightsSchema.optional(),
+  behaviorWeights: signalBehaviorWeightsSchema.optional(),
+  recommendation: signalRecommendationSchema.optional(),
 });
 
 // ============================================================

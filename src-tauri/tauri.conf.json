@@ -59,8 +59,7 @@
       }
     },
     "shell": {
-      "sidecar": true,
-      "scope": []
+      "open": true
     }
   }
 }

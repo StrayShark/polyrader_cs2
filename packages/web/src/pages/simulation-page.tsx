@@ -6,6 +6,7 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/components/ui';
 import { useI18n } from '../hooks/use-i18n';
+import { ProductModeNotice } from '../components/ProductModeNotice';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import type { LLMProvider, SimulationConfig } from '@polyrader/core';
 
@@ -99,6 +100,8 @@ export function SimulationPage() {
           {t('simulation.backtest')}
         </Button>
       </div>
+
+      <ProductModeNotice mode="simulation" />
 
       {/* Configuration Panel */}
       <Card>

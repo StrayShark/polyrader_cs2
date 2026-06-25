@@ -7,12 +7,23 @@ export class WhaleService {
   private engine = new WhaleScoringEngine();
   private whaleRepo = new WhaleRepository();
 
-  async getWhales(limit = 50): Promise<Whale[]> {
-    const cacheKey = `whales:${limit}`;
+  async getWhales(options: {
+    limit?: number;
+    sort?: 'volume' | 'win_rate';
+    minSamples?: number;
+    minWinRate?: number;
+  } = {}): Promise<Whale[]> {
+    const limit = options.limit ?? 50;
+    const sort = options.sort ?? 'volume';
+    const minSamples = options.minSamples ?? 5;
+    const minWinRate = options.minWinRate ?? 0;
+    const cacheKey = `whales:${sort}:${limit}:${minSamples}:${minWinRate}`;
     const cached = await cacheGet<Whale[]>(cacheKey);
     if (cached) return cached;
 
-    const whales = await this.whaleRepo.findAll(limit);
+    const whales = sort === 'win_rate'
+      ? this.whaleRepo.findByWinRate(limit, minSamples, minWinRate)
+      : this.whaleRepo.findAll(limit);
 
     // Re-score each whale with fresh correlation data from the DB.
     // The engine requires trades + correlation data for accurate scoring.

@@ -1,0 +1,278 @@
+{
+  "generatedAt": "2026-06-25T06:31:36.657Z",
+  "entries": [
+    {
+      "page": "global",
+      "module": "background",
+      "theme": "light",
+      "status": "pass",
+      "note": "got rgb(247, 247, 244)"
+    },
+    {
+      "page": "global",
+      "module": "foreground",
+      "theme": "light",
+      "status": "pass",
+      "note": "got rgb(38, 37, 30)"
+    },
+    {
+      "page": "global",
+      "module": "primary",
+      "theme": "light",
+      "status": "pass",
+      "note": "got rgb(245, 78, 0)"
+    },
+    {
+      "page": "global",
+      "module": "border",
+      "theme": "light",
+      "status": "pass",
+      "note": "got rgb(230, 229, 224)"
+    },
+    {
+      "page": "global",
+      "module": "background",
+      "theme": "dark",
+      "status": "pass",
+      "note": "got rgb(26, 25, 22)"
+    },
+    {
+      "page": "global",
+      "module": "foreground",
+      "theme": "dark",
+      "status": "pass",
+      "note": "got rgb(247, 247, 244)"
+    },
+    {
+      "page": "global",
+      "module": "primary",
+      "theme": "dark",
+      "status": "pass",
+      "note": "got rgb(245, 78, 0)"
+    },
+    {
+      "page": "global",
+      "module": "border",
+      "theme": "dark",
+      "status": "pass",
+      "note": "got rgb(61, 59, 52)"
+    },
+    {
+      "page": "global",
+      "module": "background",
+      "theme": "matrix",
+      "status": "pass",
+      "note": "got rgb(13, 17, 23)"
+    },
+    {
+      "page": "global",
+      "module": "foreground",
+      "theme": "matrix",
+      "status": "pass",
+      "note": "got rgb(201, 209, 217)"
+    },
+    {
+      "page": "global",
+      "module": "primary",
+      "theme": "matrix",
+      "status": "exception",
+      "note": "Matrix green primary allowed: rgb(0, 255, 65)"
+    },
+    {
+      "page": "global",
+      "module": "border",
+      "theme": "matrix",
+      "status": "pass",
+      "note": "got rgb(48, 54, 61)"
+    },
+    {
+      "page": "dashboard",
+      "module": "card-no-shadow",
+      "theme": "light",
+      "status": "pass",
+      "note": "none"
+    },
+    {
+      "page": "dashboard",
+      "module": "primary-button-height",
+      "theme": "light",
+      "status": "partial",
+      "note": "26px"
+    },
+    {
+      "page": "dashboard",
+      "module": "body-font-inter",
+      "theme": "light",
+      "status": "pass",
+      "note": "Inter, system-ui, -apple-system, sans-serif"
+    },
+    {
+      "page": "signals",
+      "module": "card-no-shadow",
+      "theme": "light",
+      "status": "pass",
+      "note": "none"
+    },
+    {
+      "page": "signals",
+      "module": "primary-button-height",
+      "theme": "light",
+      "status": "partial",
+      "note": "26px"
+    },
+    {
+      "page": "signals",
+      "module": "body-font-inter",
+      "theme": "light",
+      "status": "pass",
+      "note": "Inter, system-ui, -apple-system, sans-serif"
+    },
+    {
+      "page": "ai-config",
+      "module": "card-no-shadow",
+      "theme": "light",
+      "status": "pass",
+      "note": "none"
+    },
+    {
+      "page": "ai-config",
+      "module": "primary-button-height",
+      "theme": "light",
+      "status": "partial",
+      "note": "26px"
+    },
+    {
+      "page": "ai-config",
+      "module": "body-font-inter",
+      "theme": "light",
+      "status": "pass",
+      "note": "Inter, system-ui, -apple-system, sans-serif"
+    },
+    {
+      "page": "dashboard",
+      "module": "card-no-shadow",
+      "theme": "dark",
+      "status": "pass",
+      "note": "none"
+    },
+    {
+      "page": "dashboard",
+      "module": "primary-button-height",
+      "theme": "dark",
+      "status": "partial",
+      "note": "26px"
+    },
+    {
+      "page": "dashboard",
+      "module": "body-font-inter",
+      "theme": "dark",
+      "status": "pass",
+      "note": "Inter, system-ui, -apple-system, sans-serif"
+    },
+    {
+      "page": "signals",
+      "module": "card-no-shadow",
+      "theme": "dark",
+      "status": "pass",
+      "note": "none"
+    },
+    {
+      "page": "signals",
+      "module": "primary-button-height",
+      "theme": "dark",
+      "status": "partial",
+      "note": "26px"
+    },
+    {
+      "page": "signals",
+      "module": "body-font-inter",
+      "theme": "dark",
+      "status": "pass",
+      "note": "Inter, system-ui, -apple-system, sans-serif"
+    },
+    {
+      "page": "ai-config",
+      "module": "card-no-shadow",
+      "theme": "dark",
+      "status": "pass",
+      "note": "none"
+    },
+    {
+      "page": "ai-config",
+      "module": "primary-button-height",
+      "theme": "dark",
+      "status": "partial",
+      "note": "26px"
+    },
+    {
+      "page": "ai-config",
+      "module": "body-font-inter",
+      "theme": "dark",
+      "status": "pass",
+      "note": "Inter, system-ui, -apple-system, sans-serif"
+    },
+    {
+      "page": "dashboard",
+      "module": "card-no-shadow",
+      "theme": "matrix",
+      "status": "pass",
+      "note": "none"
+    },
+    {
+      "page": "dashboard",
+      "module": "primary-button-height",
+      "theme": "matrix",
+      "status": "partial",
+      "note": "26px"
+    },
+    {
+      "page": "dashboard",
+      "module": "body-font-inter",
+      "theme": "matrix",
+      "status": "pass",
+      "note": "Inter, system-ui, -apple-system, sans-serif"
+    },
+    {
+      "page": "signals",
+      "module": "card-no-shadow",
+      "theme": "matrix",
+      "status": "pass",
+      "note": "none"
+    },
+    {
+      "page": "signals",
+      "module": "primary-button-height",
+      "theme": "matrix",
+      "status": "partial",
+      "note": "26px"
+    },
+    {
+      "page": "signals",
+      "module": "body-font-inter",
+      "theme": "matrix",
+      "status": "pass",
+      "note": "Inter, system-ui, -apple-system, sans-serif"
+    },
+    {
+      "page": "ai-config",
+      "module": "card-no-shadow",
+      "theme": "matrix",
+      "status": "pass",
+      "note": "none"
+    },
+    {
+      "page": "ai-config",
+      "module": "primary-button-height",
+      "theme": "matrix",
+      "status": "partial",
+      "note": "26px"
+    },
+    {
+      "page": "ai-config",
+      "module": "body-font-inter",
+      "theme": "matrix",
+      "status": "pass",
+      "note": "Inter, system-ui, -apple-system, sans-serif"
+    }
+  ]
+}

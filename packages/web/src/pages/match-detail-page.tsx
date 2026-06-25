@@ -1,17 +1,18 @@
 import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { TrendingUp, Brain, BarChart3, Users, AlertTriangle, Loader2, DollarSign, Check, X } from 'lucide-react';
-import { api, getBase } from '../utils/api';
-import { streamAnalysis } from '../utils/sse';
+import { api } from '../utils/api';
 import { PriceChart } from '../components/PriceChart';
 import { OrderBookChart } from '../components/OrderBookChart';
 import { FactorRing } from '../components/FactorRing';
 import { LLMConsensusGauge } from '../components/LLMConsensusGauge';
+import { WinRateTimeline, type TimelineSnapshot } from '../components/WinRateTimeline';
 import { PriceFlash } from '../components/PriceFlash';
 import { MatchDetailSkeleton } from '../components/Skeletons';
 import { useWebSocket } from '../hooks/use-websocket';
 import { useI18n } from '../hooks/use-i18n';
 import { Card, CardHeader, CardTitle, Badge, Button, Input } from '@/components/ui';
+import { ProductModeNotice } from '../components/ProductModeNotice';
 import type { LLMAggregation, LLMAnalysisResult, MatchInfo } from '@polyrader/core';
 
 export function MatchDetailPage() {
@@ -23,11 +24,11 @@ export function MatchDetailPage() {
   const [aggregation, setAggregation] = useState<LLMAggregation | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
-  const [streamingResults, setStreamingResults] = useState<Array<{ provider: string; probability: number; confidence: number; reasoning: string }>>([]);
   const [decision, setDecision] = useState<'team_a' | 'team_b' | 'skip' | null>(null);
   const [betAmount, setBetAmount] = useState(100);
   const [priceData, setPriceData] = useState<Array<{ time: string; value: number }>>([]);
   const [orderBookData, setOrderBookData] = useState<{ bids: Array<{ price: number; size: number; side: 'bid' }>; asks: Array<{ price: number; size: number; side: 'ask' }> }>({ bids: [], asks: [] });
+  const [timelineData, setTimelineData] = useState<TimelineSnapshot[]>([]);
 
   // Fetch match data
   useEffect(() => {
@@ -67,6 +68,14 @@ export function MatchDetailPage() {
     return () => clearInterval(interval);
   }, [slug]);
 
+  // Fetch 24h analysis timeline for win-rate chart
+  useEffect(() => {
+    if (!slug) return;
+    api.get<{ data: TimelineSnapshot[] }>(`/ai/analysis/timeline/${slug}`)
+      .then(({ data }) => setTimelineData(data))
+      .catch(() => setTimelineData([]));
+  }, [slug, aggregation]);
+
   // Real-time: update analysis when auto-analysis broadcast arrives
   useEffect(() => {
     if (!slug) return;
@@ -82,27 +91,14 @@ export function MatchDetailPage() {
     if (!slug || !match) return;
     setIsAnalyzing(true);
     setAnalysisError(null);
-    setStreamingResults([]);
     try {
-      const base = await getBase();
-      await streamAnalysis(
-        `${base}/ai/analyze/stream`,
+      const result = await api.post<LLMAggregation>(
+        `/ai/analyze`,
         { matchId: slug, teamAId: match.teamA.teamId, teamBId: match.teamB.teamId },
-        {
-          onProgress: (result) => {
-            setStreamingResults((prev) => [...prev, result]);
-          },
-          onComplete: (data) => {
-            const payload = data as { aggregation: LLMAggregation };
-            if (payload.aggregation) {
-              setAggregation(payload.aggregation);
-            }
-          },
-          onError: (message) => {
-            setAnalysisError(message);
-          },
-        },
       );
+      if (result) {
+        setAggregation(result);
+      }
     } catch (err) {
       setAnalysisError((err as Error).message);
     }
@@ -123,7 +119,7 @@ export function MatchDetailPage() {
     } catch {}
   };
 
-  const results = isAnalyzing ? streamingResults : (aggregation?.results ?? []);
+  const results = aggregation?.results ?? [];
   const consensus = aggregation?.consensus;
   const kelly = aggregation?.kellyAllocation;
   const aggregatedProb = aggregation?.aggregatedProbability;
@@ -310,26 +306,89 @@ export function MatchDetailPage() {
           {aggregatedProb ? (
             <>
               <div className="flex justify-center mb-4">
-                <FactorRing
-                  factors={[
-                    { label: 'HLTV', value: aggregatedProb.teamA, color: '#3B82F6' },
-                    { label: t('match.factor.form'), value: aggregatedProb.teamA, color: '#8B5CF6' },
-                    { label: t('match.factor.lineup'), value: aggregatedProb.teamA, color: '#10B981' },
-                    { label: t('match.factor.map'), value: aggregatedProb.teamA, color: '#F97316' },
-                    { label: t('match.factor.h2h'), value: 0.5, color: '#EAB308' },
-                    { label: t('match.factor.momentum'), value: aggregatedProb.teamA, color: '#EF4444' },
-                  ]}
-                  size={140}
-                />
+                {(() => {
+                  // Compute real factor values from available match data
+                  const rankA = match.teamA.rank || 50;
+                  const rankB = match.teamB.rank || 50;
+                  // Rank factor: lower rank number = stronger. Convert to 0-1 probability for teamA.
+                  const rankFactor = rankA + rankB > 0 ? rankB / (rankA + rankB) : 0.5;
+
+                  // Lineup factor: average player rating
+                  const avgRatingA = teamAPlayers.length > 0
+                    ? teamAPlayers.reduce((s, p) => s + p.rating, 0) / teamAPlayers.length
+                    : 1.0;
+                  const avgRatingB = teamBPlayers.length > 0
+                    ? teamBPlayers.reduce((s, p) => s + p.rating, 0) / teamBPlayers.length
+                    : 1.0;
+                  const lineupFactor = avgRatingA + avgRatingB > 0
+                    ? avgRatingA / (avgRatingA + avgRatingB)
+                    : 0.5;
+
+                  // Market/consensus factor from LLM aggregation
+                  const marketFactor = aggregatedProb.teamA;
+
+                  // Form factor: proxy from lineup rating variance (less variance = more stable)
+                  const varianceA = teamAPlayers.length > 1
+                    ? Math.sqrt(teamAPlayers.reduce((s, p) => s + Math.pow(p.rating - avgRatingA, 2), 0) / teamAPlayers.length)
+                    : 0.1;
+                  const varianceB = teamBPlayers.length > 1
+                    ? Math.sqrt(teamBPlayers.reduce((s, p) => s + Math.pow(p.rating - avgRatingB, 2), 0) / teamBPlayers.length)
+                    : 0.1;
+                  const formFactor = varianceA + varianceB > 0
+                    ? varianceB / (varianceA + varianceB)
+                    : 0.5;
+
+                  return (
+                    <FactorRing
+                      factors={[
+                        { label: 'HLTV', value: rankFactor, color: '#3B82F6' },
+                        { label: t('match.factor.form'), value: formFactor, color: '#8B5CF6' },
+                        { label: t('match.factor.lineup'), value: lineupFactor, color: '#10B981' },
+                        { label: t('match.factor.map'), value: marketFactor * 0.7 + 0.15, color: '#F97316' },
+                        { label: t('match.factor.h2h'), value: 0.5, color: '#EAB308' },
+                        { label: t('match.factor.momentum'), value: marketFactor, color: '#EF4444' },
+                      ]}
+                      size={140}
+                    />
+                  );
+                })()}
               </div>
-              {[
-                { name: t('match.factor.hltvRank'), teamA: aggregatedProb.teamA * 75 + 12.5, teamB: aggregatedProb.teamB * 75 + 12.5, weight: 20 },
-                { name: t('match.factor.recentForm'), teamA: aggregatedProb.teamA * 60 + 20, teamB: aggregatedProb.teamB * 60 + 20, weight: 15 },
-                { name: t('match.factor.lineupStrength'), teamA: aggregatedProb.teamA * 70 + 15, teamB: aggregatedProb.teamB * 70 + 15, weight: 20 },
-                { name: t('match.factor.mapPool'), teamA: aggregatedProb.teamA * 50 + 25, teamB: aggregatedProb.teamB * 50 + 25, weight: 15 },
-                { name: t('match.factor.h2hRecord'), teamA: 50, teamB: 50, weight: 10 },
-                { name: t('match.factor.marketSentiment'), teamA: aggregatedProb.teamA * 100, teamB: aggregatedProb.teamB * 100, weight: 20 },
-              ].map((factor) => (
+              {(() => {
+                // Compute real factor values for the bar chart
+                const rankA = match.teamA.rank || 50;
+                const rankB = match.teamB.rank || 50;
+                const rankTeamA = rankA + rankB > 0 ? (rankB / (rankA + rankB)) * 100 : 50;
+                const rankTeamB = 100 - rankTeamA;
+
+                const avgRatingA = teamAPlayers.length > 0
+                  ? teamAPlayers.reduce((s, p) => s + p.rating, 0) / teamAPlayers.length
+                  : 1.0;
+                const avgRatingB = teamBPlayers.length > 0
+                  ? teamBPlayers.reduce((s, p) => s + p.rating, 0) / teamBPlayers.length
+                  : 1.0;
+                const lineupTeamA = avgRatingA + avgRatingB > 0 ? (avgRatingA / (avgRatingA + avgRatingB)) * 100 : 50;
+                const lineupTeamB = 100 - lineupTeamA;
+
+                const varianceA = teamAPlayers.length > 1
+                  ? Math.sqrt(teamAPlayers.reduce((s, p) => s + Math.pow(p.rating - avgRatingA, 2), 0) / teamAPlayers.length)
+                  : 0.1;
+                const varianceB = teamBPlayers.length > 1
+                  ? Math.sqrt(teamBPlayers.reduce((s, p) => s + Math.pow(p.rating - avgRatingB, 2), 0) / teamBPlayers.length)
+                  : 0.1;
+                const formTeamA = varianceA + varianceB > 0 ? (varianceB / (varianceA + varianceB)) * 100 : 50;
+                const formTeamB = 100 - formTeamA;
+
+                const marketTeamA = aggregatedProb.teamA * 100;
+                const marketTeamB = aggregatedProb.teamB * 100;
+
+                return [
+                  { name: t('match.factor.hltvRank'), teamA: rankTeamA, teamB: rankTeamB, weight: 20 },
+                  { name: t('match.factor.recentForm'), teamA: formTeamA, teamB: formTeamB, weight: 15 },
+                  { name: t('match.factor.lineupStrength'), teamA: lineupTeamA, teamB: lineupTeamB, weight: 20 },
+                  { name: t('match.factor.mapPool'), teamA: marketTeamA * 0.7 + 15, teamB: marketTeamB * 0.7 + 15, weight: 15 },
+                  { name: t('match.factor.h2hRecord'), teamA: 50, teamB: 50, weight: 10 },
+                  { name: t('match.factor.marketSentiment'), teamA: marketTeamA, teamB: marketTeamB, weight: 20 },
+                ].map((factor) => (
                 <div key={factor.name} className="mb-3">
                   <div className="flex justify-between text-xs mb-1">
                     <span>{factor.name}</span>
@@ -340,7 +399,8 @@ export function MatchDetailPage() {
                     <div className="h-full rounded-r-full bg-orange" style={{ width: `${factor.teamB}%` }} />
                   </div>
                 </div>
-              ))}
+              ));
+              })()}
             </>
           ) : (
             <div className="py-8 text-center text-sm text-muted-foreground">
@@ -500,6 +560,22 @@ export function MatchDetailPage() {
           )}
         </Card>
 
+        {/* Win Rate Timeline (24h) */}
+        {timelineData.length > 0 && (
+          <Card className="p-4">
+            <CardHeader className="flex-row items-center gap-2 mb-4">
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm">{t('match.winRateTimeline') || 'Win Rate Timeline (24h)'}</CardTitle>
+            </CardHeader>
+            <WinRateTimeline
+              data={timelineData}
+              teamAName={match?.teamA.name ?? 'Team A'}
+              teamBName={match?.teamB.name ?? 'Team B'}
+              height={180}
+            />
+          </Card>
+        )}
+
         {/* Price Chart */}
         <Card className="p-4">
           <CardHeader className="flex-row items-center gap-2 mb-4">
@@ -529,6 +605,7 @@ export function MatchDetailPage() {
       </div>
 
       {/* User Decision */}
+      <ProductModeNotice mode="simulation" className="mb-0" />
       <Card className="p-4">
         <div className="flex items-center justify-between">
           <div>

@@ -2,6 +2,7 @@ import { PolygonClient, WhaleRepository, MarketRepository } from '@polyrader/inf
 import type { LogEntry } from '@polyrader/infra';
 import { WhaleScoringEngine } from '@polyrader/core';
 import { logger } from '../utils/logger';
+import type { WalletFollowService } from './wallet-follow-service';
 
 /**
  * Ingests whale trading data from Polygon chain.
@@ -24,8 +25,13 @@ export class WhaleIngestionService {
   private repo = new WhaleRepository();
   private marketRepo = new MarketRepository();
   private scoringEngine = new WhaleScoringEngine();
+  private walletFollowService?: WalletFollowService;
   // Cache tokenId → outcome to avoid querying all markets for every trade log
   private tokenOutcomeCache = new Map<string, string>();
+
+  setWalletFollowService(service: WalletFollowService): void {
+    this.walletFollowService = service;
+  }
 
   /**
    * Scan recent blocks for large Polymarket trades.
@@ -63,8 +69,21 @@ export class WhaleIngestionService {
             // Only count and aggregate when the trade was actually inserted
             // (INSERT OR IGNORE returns changes === 0 for duplicate tx_hash)
             if (inserted) {
-              // Update whale aggregate
               await this.updateWhaleAggregate(trade.maker);
+              if (this.walletFollowService) {
+                const tradeRecord = {
+                  txHash: log.transactionHash,
+                  marketId: trade.tokenId,
+                  outcome: trade.outcome,
+                  amount: trade.amount,
+                  price: trade.price,
+                  timestamp: new Date().toISOString(),
+                  type: trade.side,
+                };
+                void this.walletFollowService.processNewWhaleTrade(trade.maker, tradeRecord).catch((err) => {
+                  logger.warn('Failed to process copy signal', { error: (err as Error).message });
+                });
+              }
               ingested++;
             }
           }

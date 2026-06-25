@@ -1,4 +1,12 @@
-import type { SignalComparison, SignalSource } from '../types/index';
+import type {
+  DebateInferenceResult,
+  MarketBehaviorResult,
+  SignalComparison,
+  SignalSource,
+  SignalSourceWeights,
+  SignalTuningConfigInput,
+} from '../types/index';
+import { mergeSignalTuningConfig } from '../scoring/weights';
 
 /**
  * SignalComparisonEngine — Multi-source signal comparison and deviation analysis
@@ -6,7 +14,7 @@ import type { SignalComparison, SignalSource } from '../types/index';
  * Compares signals from:
  *   - Polymarket market price
  *   - Internal prediction model
- *   - HLTV community odds (if available)
+ *   - HLTV community vote (Pick a winner)
  */
 export class SignalComparisonEngine {
   /**
@@ -16,54 +24,108 @@ export class SignalComparisonEngine {
     marketId: string,
     polymarketProb: number,
     predictedProb: number,
-    hltvProb?: number,
+    hltvCommunityProb?: number,
+    extraSignals: SignalSource[] = [],
+    context?: {
+      marketBehavior?: MarketBehaviorResult;
+      aiDebate?: DebateInferenceResult;
+      tuningConfig?: SignalTuningConfigInput;
+    },
   ): SignalComparison {
+    const tuningConfig = mergeSignalTuningConfig(context?.tuningConfig);
+    const now = new Date().toISOString();
     const signals: SignalSource[] = [
       {
         source: 'polymarket',
         probability: polymarketProb,
         confidence: 0.8,
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: now,
       },
       {
         source: 'prediction_model',
         probability: predictedProb,
         confidence: 0.7,
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: now,
       },
     ];
 
-    if (hltvProb !== undefined) {
+    if (hltvCommunityProb !== undefined) {
       signals.push({
         source: 'hltv_odds',
-        probability: hltvProb,
-        confidence: 0.5,
-        lastUpdated: new Date().toISOString(),
+        probability: hltvCommunityProb,
+        confidence: 0.65,
+        lastUpdated: now,
       });
     }
 
-    const deviation = this.calculateDeviation(signals);
+    signals.push(...extraSignals);
+
+    const final = this.calculateFinalProbability(signals, tuningConfig.sourceWeights);
+    const edge = final.probability - polymarketProb;
+    const bubbleScore = context?.marketBehavior?.bubbleScore ?? 0;
+    const riskAdjustedEdge = edge * final.confidence * (1 - bubbleScore * tuningConfig.recommendation.bubbleRiskPenalty);
+    const recommendation = this.recommend(edge, final.confidence, bubbleScore, tuningConfig.recommendation);
+    const deviation = Math.abs(edge);
     const arbitrageOpportunity = this.detectArbitrage(signals);
 
     return {
       marketId,
       polymarketProb,
       predictedProb,
+      finalProb: final.probability,
+      finalConfidence: final.confidence,
+      edge,
+      riskAdjustedEdge,
+      recommendation,
       deviation,
       signals,
+      marketBehavior: context?.marketBehavior,
+      aiDebate: context?.aiDebate,
       arbitrageOpportunity,
     };
   }
 
-  /**
-   * Calculate the deviation between Polymarket price and model prediction.
-   */
-  private calculateDeviation(signals: SignalSource[]): number {
-    const pm = signals.find((s) => s.source === 'polymarket');
-    const model = signals.find((s) => s.source === 'prediction_model');
-    if (!pm || !model) return 0;
+  private calculateFinalProbability(
+    signals: SignalSource[],
+    sourceWeights: SignalSourceWeights,
+  ): { probability: number; confidence: number } {
+    const predictiveSignals = signals.filter((s) => s.source !== 'polymarket');
+    if (predictiveSignals.length === 0) {
+      const pm = signals.find((s) => s.source === 'polymarket');
+      return { probability: pm?.probability ?? 0.5, confidence: pm?.confidence ?? 0.1 };
+    }
 
-    return Math.abs(pm.probability - model.probability);
+    let totalWeight = 0;
+    let weightedProb = 0;
+    for (const signal of predictiveSignals) {
+      const confidence = this.clamp(signal.confidence, 0.01, 1);
+      const sourceWeight = sourceWeights[signal.source] ?? 0.5;
+      const weight = confidence * sourceWeight;
+      totalWeight += weight;
+      weightedProb += this.clamp(signal.probability, 0.01, 0.99) * weight;
+    }
+
+    const probability = totalWeight > 0 ? weightedProb / totalWeight : 0.5;
+    const confidence = Math.min(0.95, totalWeight / predictiveSignals.length);
+    return {
+      probability: this.round4(probability),
+      confidence: this.round4(confidence),
+    };
+  }
+
+  private recommend(
+    edge: number,
+    confidence: number,
+    bubbleScore: number,
+    config: {
+      minEdge: number;
+      bubbleMinEdge: number;
+      minConfidence: number;
+    },
+  ): SignalComparison['recommendation'] {
+    const minEdge = bubbleScore >= 0.6 ? config.bubbleMinEdge : config.minEdge;
+    if (confidence < config.minConfidence || Math.abs(edge) < minEdge) return 'skip';
+    return edge > 0 ? 'buy_yes' : 'buy_no';
   }
 
   /**
@@ -123,5 +185,14 @@ export class SignalComparisonEngine {
     }
 
     return sum / predictions.length;
+  }
+
+  private clamp(value: number, min: number, max: number): number {
+    if (!Number.isFinite(value)) return min;
+    return Math.min(max, Math.max(min, value));
+  }
+
+  private round4(value: number): number {
+    return Math.round(value * 10000) / 10000;
   }
 }

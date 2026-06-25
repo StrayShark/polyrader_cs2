@@ -1,18 +1,45 @@
 import type { Request, Response } from 'express';
 import { WhaleService } from '../services/whale-service';
+import { WalletPerformanceService } from '../services/wallet-performance-service';
 import { logger } from '../utils/logger';
+import type { whaleLeaderboardQuerySchema, whaleQuerySchema } from '../validation/schemas';
+import type { z } from 'zod';
+
+type WhaleQuery = z.infer<typeof whaleQuerySchema>;
+type WhaleLeaderboardQuery = z.infer<typeof whaleLeaderboardQuerySchema>;
 
 export class WhaleController {
   private service = new WhaleService();
+  private performanceService = new WalletPerformanceService();
 
   async getWhales(req: Request, res: Response): Promise<void> {
     try {
-      const limit = parseInt(req.query.limit as string, 10) || 50;
-      const whales = await this.service.getWhales(limit);
+      const query = req.query as unknown as WhaleQuery;
+      const whales = await this.service.getWhales({
+        limit: query.limit,
+        sort: query.sort,
+        minSamples: query.minSamples,
+        minWinRate: query.minWinRate,
+      });
       res.json({ data: whales });
     } catch (err) {
       logger.error('Failed to fetch whales', { error: (err as Error).message, requestId: req.headers['x-request-id'] });
       res.status(500).json({ error: 'Failed to fetch whales', message: process.env.NODE_ENV === 'development' ? (err as Error).message : undefined });
+    }
+  }
+
+  async getLeaderboard(req: Request, res: Response): Promise<void> {
+    try {
+      const query = req.query as unknown as WhaleLeaderboardQuery;
+      const whales = this.performanceService.getLeaderboard({
+        limit: query.limit,
+        minSamples: query.minSamples,
+        minWinRate: query.minWinRate,
+      });
+      res.json({ data: whales });
+    } catch (err) {
+      logger.error('Failed to fetch whale leaderboard', { error: (err as Error).message, requestId: req.headers['x-request-id'] });
+      res.status(500).json({ error: 'Failed to fetch whale leaderboard', message: process.env.NODE_ENV === 'development' ? (err as Error).message : undefined });
     }
   }
 

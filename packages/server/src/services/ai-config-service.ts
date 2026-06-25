@@ -1,10 +1,10 @@
 import type { LLMConfig, LLMAnalysisResult, LLMAggregation, ConnectivityResult, LLMProvider, MatchInfo, Team, PromptVariant } from '@polyrader/core';
-import { KeyManager, PromptEngine, ResultAggregator, selectWeightedVariant } from '@polyrader/core';
+import { KeyManager, PromptEngine, ResultAggregator, selectWeightedVariant, getLLMPricing } from '@polyrader/core';
 import type { PromptTemplate } from '@polyrader/core';
 import { LLMClientFactory, LLMRepository, CircuitBreakerLLMClient } from '@polyrader/infra';
 import { cacheGet, cacheSet } from '@polyrader/infra';
 import { logger } from '../utils/logger';
-import { buildFallbackTeam, parseJsonField } from './match-helpers';
+import { buildFallbackTeam, mapLegacyMatchStatus, parseJsonField } from './match-helpers';
 import { SimulationService } from './simulation-service';
 import { MarketService } from './market-service';
 
@@ -16,6 +16,20 @@ export class AiConfigService {
   private circuitBreakers = new Map<string, CircuitBreakerLLMClient>();
   private simulationService = new SimulationService();
   private marketService = new MarketService();
+
+  /**
+   * Compute provider weights from historical calibration data.
+   * Used by ResultAggregator to weight LLM predictions by reliability.
+   */
+  private getCalibratedWeights(): Record<string, number> | undefined {
+    try {
+      const stats = this.llmRepo.getAllStats();
+      if (stats.length === 0) return undefined;
+      return ResultAggregator.computeProviderWeights(stats);
+    } catch {
+      return undefined;
+    }
+  }
 
   // In-flight analysis dedup: prevents duplicate LLM calls for the same matchId
   private inflightAnalyses = new Map<string, Promise<LLMAggregation>>();
@@ -72,6 +86,16 @@ export class AiConfigService {
     return wrapped;
   }
 
+  private async getMarketProbA(matchId: string): Promise<number | undefined> {
+    try {
+      const market = await this.marketService.getMarket(matchId);
+      const raw = market?.outcomePrices?.[0] ? parseFloat(market.outcomePrices[0]) : undefined;
+      return raw !== undefined && Number.isFinite(raw) && raw > 0 && raw < 1 ? raw : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
   async getKeys(): Promise<LLMConfig[]> {
     const configs = await this.llmRepo.getAllConfigs();
     return configs.map((c) => ({
@@ -119,9 +143,26 @@ export class AiConfigService {
 
   async getUsage(): Promise<Array<{ provider: LLMProvider; used: number; limit: number; cost: number }>> {
     const configs = await this.llmRepo.getAllConfigs();
-    return configs.filter((c) => c.isEnabled).map((c) => ({
-      provider: c.provider, used: c.quotaUsed, limit: c.quotaLimit, cost: c.costEstimate,
-    }));
+    const result: Array<{ provider: LLMProvider; used: number; limit: number; cost: number }> = [];
+
+    for (const c of configs) {
+      if (!c.isEnabled) continue;
+      // Refresh quota from aggregated token usage
+      try {
+        const pricing = getLLMPricing(c.provider);
+        this.llmRepo.refreshQuota(c.provider, pricing);
+        const refreshed = this.llmRepo.getConfig(c.provider);
+        result.push({
+          provider: c.provider,
+          used: refreshed?.quotaUsed ?? 0,
+          limit: c.quotaLimit,
+          cost: refreshed?.costEstimate ?? 0,
+        });
+      } catch {
+        result.push({ provider: c.provider, used: c.quotaUsed, limit: c.quotaLimit, cost: c.costEstimate });
+      }
+    }
+    return result;
   }
 
   /**
@@ -169,8 +210,18 @@ export class AiConfigService {
 
     // Load match data from local DB — use getMatch for direct lookup
     const matchData = this.llmRepo.getMatch(matchId);
+    // Business rule: only analyze upcoming matches (not live/finished)
+    const matchStatus = matchData ? String(matchData.status ?? 'scheduled') : 'scheduled';
+    const scheduledAt = matchData ? String(matchData.scheduled_at ?? '') : '';
+    if (!['scheduled', 'upcoming', 'pre_match'].includes(matchStatus)) {
+      throw new Error(`Refused to analyze match ${matchId}: status is "${matchStatus}", only upcoming matches can be analyzed`);
+    }
+    if (scheduledAt && new Date(scheduledAt).getTime() < Date.now()) {
+      throw new Error(`Refused to analyze match ${matchId}: scheduled time ${scheduledAt} is in the past`);
+    }
     const teamAData = await this.loadTeamData(teamAId);
     const teamBData = await this.loadTeamData(teamBId);
+    const mappedStatus = mapLegacyMatchStatus(matchStatus, scheduledAt || new Date().toISOString());
 
     // Build match info with real data
     const match: MatchInfo = {
@@ -180,8 +231,8 @@ export class AiConfigService {
       eventName: matchData ? String(matchData.event_name ?? 'Unknown Event') : 'Unknown Event',
       eventType: matchData ? (String(matchData.event_type ?? 'Online') as 'LAN' | 'Online') : 'Online',
       format: matchData ? (String(matchData.format ?? 'BO3') as 'BO1' | 'BO3' | 'BO5') : 'BO3',
-      scheduledAt: matchData ? String(matchData.scheduled_at ?? new Date().toISOString()) : new Date().toISOString(),
-      status: 'scheduled',
+      scheduledAt: scheduledAt || new Date().toISOString(),
+      status: mappedStatus,
       maps: (parseJsonField(matchData?.maps) as string[]) ?? [],
       lineups: parseJsonField(matchData?.lineups) as MatchInfo['lineups'],
     };
@@ -225,13 +276,55 @@ export class AiConfigService {
       };
     });
 
-    const aggregation = this.resultAggregator.aggregate(matchId, analysisResults);
+    const providerWeights = this.getCalibratedWeights();
+    const marketProbA = await this.getMarketProbA(matchId);
+    const aggregation = this.resultAggregator.aggregate(matchId, analysisResults, providerWeights, marketProbA);
     aggregation.variantId = variantId;
 
     // Persist analysis results to DB
     try {
+      // Ensure teams + match rows exist (FK targets for llm_analyses).
+      // HLTV may not have upserted them yet (e.g. 403 or manual analysis trigger).
+      const existingMatch = this.llmRepo.getMatch(matchId);
+      if (!existingMatch) {
+        this.llmRepo.upsertTeam({
+          teamId: teamAId, name: teamAData?.name ?? teamAId,
+          rank: teamAData?.rank ?? 0, region: teamAData?.region ?? '',
+          players: JSON.stringify(teamAData?.players ?? []),
+          recentForm: JSON.stringify(teamAData?.recentForm ?? {}),
+          mapPool: JSON.stringify(teamAData?.mapPool ?? {}),
+        });
+        this.llmRepo.upsertTeam({
+          teamId: teamBId, name: teamBData?.name ?? teamBId,
+          rank: teamBData?.rank ?? 0, region: teamBData?.region ?? '',
+          players: JSON.stringify(teamBData?.players ?? []),
+          recentForm: JSON.stringify(teamBData?.recentForm ?? {}),
+          mapPool: JSON.stringify(teamBData?.mapPool ?? {}),
+        });
+        this.llmRepo.upsertMatch({
+          matchId,
+          teamAId,
+          teamBId,
+          teamAName: teamAData?.name ?? teamAId,
+          teamBName: teamBData?.name ?? teamBId,
+          eventName: match.eventName,
+          eventType: match.eventType,
+          format: match.format,
+          scheduledAt: match.scheduledAt,
+          status: 'scheduled',
+          maps: [],
+          hasTeamData: !!(teamAData && teamBData),
+        });
+      }
       for (const result of analysisResults) {
         this.llmRepo.insertAnalysis(matchId, result, variantId);
+      }
+      // Refresh quota/cost for each provider that participated
+      for (const result of analysisResults) {
+        if (!result.error && result.tokenUsage.totalTokens > 0) {
+          const pricing = getLLMPricing(result.provider);
+          this.llmRepo.refreshQuota(result.provider, pricing);
+        }
       }
     } catch (err) {
       logger.warn('Failed to persist analysis results', { error: (err as Error).message });
@@ -239,8 +332,7 @@ export class AiConfigService {
 
     // Auto-place simulation bets for each LLM based on simulation config
     try {
-      const market = await this.marketService.getMarket(matchId);
-      const marketProb = market?.outcomePrices?.[0] ? parseFloat(market.outcomePrices[0]) : 0.5;
+      const marketProb = marketProbA ?? 0.5;
       const teamAName = match.teamA.name;
       const teamBName = match.teamB.name;
       this.simulationService.autoBetFromAnalysis(matchId, analysisResults, marketProb, teamAName, teamBName);
@@ -293,8 +385,18 @@ export class AiConfigService {
     }
 
     const matchData = this.llmRepo.getMatch(matchId);
+    // Business rule: only analyze upcoming matches (not live/finished)
+    const matchStatus = matchData ? String(matchData.status ?? 'scheduled') : 'scheduled';
+    const scheduledAt = matchData ? String(matchData.scheduled_at ?? '') : '';
+    if (!['scheduled', 'upcoming', 'pre_match'].includes(matchStatus)) {
+      throw new Error(`Refused to analyze match ${matchId}: status is "${matchStatus}", only upcoming matches can be analyzed`);
+    }
+    if (scheduledAt && new Date(scheduledAt).getTime() < Date.now()) {
+      throw new Error(`Refused to analyze match ${matchId}: scheduled time ${scheduledAt} is in the past`);
+    }
     const teamAData = await this.loadTeamData(teamAId);
     const teamBData = await this.loadTeamData(teamBId);
+    const mappedStatus = mapLegacyMatchStatus(matchStatus, scheduledAt || new Date().toISOString());
 
     const match: MatchInfo = {
       matchId,
@@ -303,8 +405,8 @@ export class AiConfigService {
       eventName: matchData ? String(matchData.event_name ?? 'Unknown Event') : 'Unknown Event',
       eventType: matchData ? (String(matchData.event_type ?? 'Online') as 'LAN' | 'Online') : 'Online',
       format: matchData ? (String(matchData.format ?? 'BO3') as 'BO1' | 'BO3' | 'BO5') : 'BO3',
-      scheduledAt: matchData ? String(matchData.scheduled_at ?? new Date().toISOString()) : new Date().toISOString(),
-      status: 'scheduled',
+      scheduledAt: scheduledAt || new Date().toISOString(),
+      status: mappedStatus,
       maps: (parseJsonField(matchData?.maps) as string[]) ?? [],
       lineups: parseJsonField(matchData?.lineups) as MatchInfo['lineups'],
     };
@@ -350,13 +452,54 @@ export class AiConfigService {
       }),
     );
 
-    const aggregation = this.resultAggregator.aggregate(matchId, results);
+    const providerWeights2 = this.getCalibratedWeights();
+    const marketProbA = await this.getMarketProbA(matchId);
+    const aggregation = this.resultAggregator.aggregate(matchId, results, providerWeights2, marketProbA);
     aggregation.variantId = variantId;
 
     // Persist analysis results to DB
     try {
+      // Ensure teams + match rows exist (FK targets for llm_analyses).
+      const existingMatch = this.llmRepo.getMatch(matchId);
+      if (!existingMatch) {
+        this.llmRepo.upsertTeam({
+          teamId: teamAId, name: teamAData?.name ?? teamAId,
+          rank: teamAData?.rank ?? 0, region: teamAData?.region ?? '',
+          players: JSON.stringify(teamAData?.players ?? []),
+          recentForm: JSON.stringify(teamAData?.recentForm ?? {}),
+          mapPool: JSON.stringify(teamAData?.mapPool ?? {}),
+        });
+        this.llmRepo.upsertTeam({
+          teamId: teamBId, name: teamBData?.name ?? teamBId,
+          rank: teamBData?.rank ?? 0, region: teamBData?.region ?? '',
+          players: JSON.stringify(teamBData?.players ?? []),
+          recentForm: JSON.stringify(teamBData?.recentForm ?? {}),
+          mapPool: JSON.stringify(teamBData?.mapPool ?? {}),
+        });
+        this.llmRepo.upsertMatch({
+          matchId,
+          teamAId,
+          teamBId,
+          teamAName: teamAData?.name ?? teamAId,
+          teamBName: teamBData?.name ?? teamBId,
+          eventName: match.eventName,
+          eventType: match.eventType,
+          format: match.format,
+          scheduledAt: match.scheduledAt,
+          status: 'scheduled',
+          maps: [],
+          hasTeamData: !!(teamAData && teamBData),
+        });
+      }
       for (const result of results) {
         this.llmRepo.insertAnalysis(matchId, result, variantId);
+      }
+      // Refresh quota/cost for each provider that participated
+      for (const result of results) {
+        if (!result.error && result.tokenUsage.totalTokens > 0) {
+          const pricing = getLLMPricing(result.provider);
+          this.llmRepo.refreshQuota(result.provider, pricing);
+        }
       }
     } catch (err) {
       logger.warn('Failed to persist analysis results', { error: (err as Error).message });
@@ -364,8 +507,7 @@ export class AiConfigService {
 
     // Auto-place simulation bets for each LLM based on simulation config
     try {
-      const market = await this.marketService.getMarket(matchId);
-      const marketProb = market?.outcomePrices?.[0] ? parseFloat(market.outcomePrices[0]) : 0.5;
+      const marketProb = marketProbA ?? 0.5;
       this.simulationService.autoBetFromAnalysis(matchId, results, marketProb, match.teamA.name, match.teamB.name);
     } catch (simErr) {
       logger.warn('Simulation auto-bet failed (stream)', { error: (simErr as Error).message });
@@ -404,7 +546,7 @@ export class AiConfigService {
     provider: string,
   ): Promise<LLMAnalysisResult> {
     const maxRetries = 2;
-    const timeout = 30000;
+    const timeout = 60000;
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -467,7 +609,7 @@ export class AiConfigService {
       google: 'gemini-2.0-flash', deepseek: 'deepseek-chat',
       xai: 'grok-2', groq: 'llama-3.3-70b-versatile',
       qwen: 'qwen-max', moonshot: 'moonshot-v1-128k',
-      zhipu: 'glm-4-plus', doubao: 'doubao-1.5-pro-256k',
+      zhipu: 'glm-4-plus', doubao: 'doubao-seed-2.0-pro',
       minimax: 'abab6.5s-chat', hunyuan: 'hunyuan-large',
       user: 'manual',
     };

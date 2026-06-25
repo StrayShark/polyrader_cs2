@@ -6,9 +6,10 @@ export class DoubaoClient implements LLMClient {
   provider = 'doubao' as const;
   private apiKey: string;
   private model: string;
-  private baseUrl = process.env.DOUBAO_BASE_URL || 'https://ark.cn-beijing.volces.com/api/v3';
+  // ARK Coding Plan endpoint (OpenAI-compatible)
+  private baseUrl = process.env.DOUBAO_BASE_URL || 'https://ark.cn-beijing.volces.com/api/coding/v3';
 
-  constructor(apiKey: string, model = 'doubao-1.5-pro-256k') {
+  constructor(apiKey: string, model = 'doubao-seed-2.0-pro') {
     this.apiKey = apiKey;
     this.model = model;
   }
@@ -30,6 +31,7 @@ export class DoubaoClient implements LLMClient {
         temperature: 0.3,
         max_tokens: 1000,
       }),
+      signal: AbortSignal.timeout(55000),
     });
 
     if (!response.ok) {

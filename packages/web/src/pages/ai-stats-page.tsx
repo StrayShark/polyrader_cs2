@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BarChart3, TrendingUp, TrendingDown, Target, History, Brain, DollarSign, RefreshCw } from 'lucide-react';
 import { useLLMStore } from '../stores/llm-store';
 import { api } from '../utils/api';
@@ -11,6 +12,7 @@ import type { UserStats, SimulatedBet, CalibrationPoint } from '@polyrader/core'
 
 export function AiStatsPage() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const { stats, isLoading, error, fetchLeaderboard, settleBet, deleteBet } = useLLMStore();
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [history, setHistory] = useState<SimulatedBet[]>([]);
@@ -145,7 +147,7 @@ export function AiStatsPage() {
             </TableHeader>
             <TableBody>
               {stats.map((row, i) => (
-                <TableRow key={row.provider}>
+                <TableRow key={row.provider} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/llm/analysis/${row.provider}`)}>
                   <TableCell className="px-6 py-3 font-mono text-xs text-muted-foreground">{i + 1}</TableCell>
                   <TableCell className="px-6 py-3 font-medium capitalize">{row.provider}</TableCell>
                   <TableCell className="px-6 py-3 text-right tabular-nums">{row.totalPredictions}</TableCell>

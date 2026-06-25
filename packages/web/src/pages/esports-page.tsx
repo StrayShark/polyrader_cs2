@@ -59,6 +59,18 @@ export function EsportsPage() {
     fetchData();
   }, []);
 
+  const matchesByDate = matches.reduce<Record<string, HltvMatch[]>>((acc, m) => {
+    const day = m.date ? new Date(m.date).toLocaleDateString() : t('esports.tbd');
+    if (!acc[day]) acc[day] = [];
+    acc[day].push(m);
+    return acc;
+  }, {});
+  const sortedDates = Object.keys(matchesByDate).sort((a, b) => {
+    if (a === t('esports.tbd')) return 1;
+    if (b === t('esports.tbd')) return -1;
+    return new Date(a).getTime() - new Date(b).getTime();
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -114,7 +126,47 @@ export function EsportsPage() {
         )}
       </Card>
 
-      {/* Upcoming Matches */}
+      {/* Schedule Calendar */}
+      <Card className="p-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Gamepad2 className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-medium">{t('esports.scheduleCalendar')}</h2>
+        </div>
+        {matches.length === 0 ? (
+          <div className="py-8 text-center text-sm text-muted-foreground">
+            {t('esports.matchesEmpty')}
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {sortedDates.map((day) => (
+              <div key={day}>
+                <div className="mb-2 text-xs font-medium text-muted-foreground">{day}</div>
+                <div className="space-y-2">
+                  {matchesByDate[day].map((m) => (
+                    <div
+                      key={m.matchId}
+                      className="flex cursor-pointer items-center justify-between rounded-md bg-muted/50 px-4 py-3 text-sm transition-colors hover:bg-muted"
+                      onClick={() => navigate(`/match/${m.matchId}`)}
+                    >
+                      <div className="flex items-center gap-4">
+                        <span className="font-medium">{m.teamA}</span>
+                        <span className="text-xs text-muted-foreground">vs</span>
+                        <span className="font-medium">{m.teamB}</span>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span>{m.event}</span>
+                        <span>{m.format}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* Upcoming Matches (compact list) */}
       <Card className="p-4">
         <div className="flex items-center gap-2 mb-4">
           <Gamepad2 className="h-4 w-4 text-muted-foreground" />

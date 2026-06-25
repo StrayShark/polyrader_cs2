@@ -1,11 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('@polyrader/infra', () => ({
+  cacheDelete: vi.fn(),
   cacheGet: vi.fn(),
+  cacheKeys: vi.fn().mockResolvedValue([]),
   cacheSet: vi.fn(),
   LLMRepository: vi.fn().mockImplementation(() => ({
     getMatch: vi.fn(),
     getBets: vi.fn(),
+  })),
+  SignalRepository: vi.fn().mockImplementation(() => ({
+    insertSnapshot: vi.fn(),
+    findByMarket: vi.fn(),
+    findRecent: vi.fn(),
+    findResolved: vi.fn(),
+    getTuningConfig: vi.fn(),
+    updateTuningConfig: vi.fn(),
   })),
 }));
 
@@ -13,6 +23,12 @@ vi.mock('../services/market-service', () => ({
   MarketService: vi.fn().mockImplementation(() => ({
     getMarkets: vi.fn(),
     getMarket: vi.fn(),
+  })),
+}));
+
+vi.mock('../services/whale-service', () => ({
+  WhaleService: vi.fn().mockImplementation(() => ({
+    getWhales: vi.fn(),
   })),
 }));
 
@@ -25,6 +41,35 @@ vi.mock('@polyrader/core', () => ({
   PredictionEngine: vi.fn().mockImplementation(() => ({
     predict: vi.fn(),
   })),
+  MarketBehaviorEngine: vi.fn().mockImplementation(() => ({
+    analyze: vi.fn(),
+  })),
+  DebateInferenceEngine: vi.fn().mockImplementation(() => ({
+    infer: vi.fn(),
+  })),
+  SignalBacktestEngine: vi.fn().mockImplementation(() => ({
+    run: vi.fn(),
+  })),
+  DEFAULT_SIGNAL_TUNING_CONFIG: {
+    sourceWeights: {},
+    behaviorWeights: {},
+    recommendation: {
+      minEdge: 0.05,
+      bubbleMinEdge: 0.07,
+      minConfidence: 0.3,
+      bubbleRiskPenalty: 0.5,
+    },
+  },
+  mergeSignalTuningConfig: vi.fn((config) => config ?? {
+    sourceWeights: {},
+    behaviorWeights: {},
+    recommendation: {
+      minEdge: 0.05,
+      bubbleMinEdge: 0.07,
+      minConfidence: 0.3,
+      bubbleRiskPenalty: 0.5,
+    },
+  }),
 }));
 
 import { SignalService } from '../services/signal-service';

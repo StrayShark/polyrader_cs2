@@ -35,6 +35,7 @@ const navigation = [
       { to: '/whales', icon: Fish, labelKey: 'nav.whales' },
       { to: '/esports', icon: Gamepad2, labelKey: 'nav.esports' },
       { to: '/signals', icon: Activity, labelKey: 'nav.signals' },
+      { to: '/polymarket/account', icon: Wallet, labelKey: 'nav.polymarketAccount' },
     ],
   },
   {

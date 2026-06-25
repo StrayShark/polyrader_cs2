@@ -53,35 +53,50 @@ export async function streamAnalysis(
     onError?: (message: string) => void;
   },
 ): Promise<void> {
+  const controller = new AbortController();
+  // Connection timeout: only applies until response headers arrive.
+  // SSE streams can take 60s+ for the first LLM result, so the connection
+  // timeout must be short (just to detect server down), and the stream
+  // timeout must be generous.
+  const connectTimer = setTimeout(() => controller.abort(), 15000);
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+    signal: controller.signal,
   });
+  clearTimeout(connectTimer);
 
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
 
-  for await (const { event, data } of parseSSEStream(response)) {
-    try {
-      const parsed = JSON.parse(data);
+  // Stream timeout: 5 minutes for the entire analysis to complete
+  const streamTimer = setTimeout(() => controller.abort(), 300000);
 
-      switch (event) {
-        case 'llm_result':
-          callbacks.onProgress?.(parsed);
-          break;
-        case 'result':
-          callbacks.onComplete?.(parsed);
-          break;
-        case 'error':
-          callbacks.onError?.(parsed.message ?? 'Analysis failed');
-          break;
-        case 'done':
-          return;
+  try {
+    for await (const { event, data } of parseSSEStream(response)) {
+      try {
+        const parsed = JSON.parse(data);
+
+        switch (event) {
+          case 'llm_result':
+            callbacks.onProgress?.(parsed);
+            break;
+          case 'result':
+            callbacks.onComplete?.(parsed);
+            break;
+          case 'error':
+            callbacks.onError?.(parsed.message ?? 'Analysis failed');
+            break;
+          case 'done':
+            return;
+        }
+      } catch {
+        // Ignore malformed JSON
       }
-    } catch {
-      // Ignore malformed JSON
     }
+  } finally {
+    clearTimeout(streamTimer);
   }
 }

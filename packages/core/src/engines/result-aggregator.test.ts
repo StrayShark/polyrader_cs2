@@ -70,6 +70,31 @@ describe('ResultAggregator', () => {
     expect(agg.kellyAllocation.recommendedBet).toBe('skip');
   });
 
+  it('should use market odds for Kelly allocation when market probability is provided', () => {
+    const results = [
+      makeResult({ provider: 'openai', winProbability: { teamA: 0.65, teamB: 0.35 }, confidence: 0.8 }),
+      makeResult({ provider: 'anthropic', winProbability: { teamA: 0.64, teamB: 0.36 }, confidence: 0.8 }),
+      makeResult({ provider: 'google', winProbability: { teamA: 0.66, teamB: 0.34 }, confidence: 0.8 }),
+    ];
+
+    const agg = aggregator.aggregate('match-1', results, undefined, 0.5);
+
+    expect(agg.kellyAllocation.recommendedBet).toBe('team_a');
+    expect(agg.kellyAllocation.kellyFraction).toBeGreaterThan(0);
+  });
+
+  it('should skip Kelly allocation when model probability has no market edge', () => {
+    const results = [
+      makeResult({ provider: 'openai', winProbability: { teamA: 0.55, teamB: 0.45 }, confidence: 0.8 }),
+      makeResult({ provider: 'anthropic', winProbability: { teamA: 0.56, teamB: 0.44 }, confidence: 0.8 }),
+    ];
+
+    const agg = aggregator.aggregate('match-1', results, undefined, 0.6);
+
+    expect(agg.kellyAllocation.recommendedBet).toBe('skip');
+    expect(agg.kellyAllocation.kellyFraction).toBe(0);
+  });
+
   it('should handle empty results gracefully', () => {
     const results: LLMAnalysisResult[] = [];
 

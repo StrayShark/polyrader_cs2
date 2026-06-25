@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PolyRader CS2 — LLM 接入状态报告</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card-bg: #1a1d28;
+    --card-border: #2a2e3f;
+    --accent: #6366f1;
+    --accent-light: #818cf8;
+    --green: #22c55e;
+    --yellow: #eab308;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --text-bright: #f1f5f9;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6; padding: 2rem;
+  }
+  h1 { font-size: 1.8rem; color: var(--text-bright); margin-bottom: 0.5rem; }
+  h2 { font-size: 1.4rem; color: var(--text-bright); margin: 2rem 0 1rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem; }
+  h3 { font-size: 1.1rem; color: var(--accent-light); margin-bottom: 0.5rem; }
+  .subtitle { color: var(--text-dim); margin-bottom: 2rem; font-size: 0.9rem; }
+  .grid { display: grid; gap: 1rem; }
+  .grid-2 { grid-template-columns: repeat(auto-fill, minmax(550px, 1fr)); }
+  .card {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 0.75rem; padding: 1.5rem;
+  }
+  .card-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem; }
+  .card-header h3 { font-size: 1.2rem; }
+  .badge {
+    display: inline-block; padding: 0.15rem 0.6rem; border-radius: 999px;
+    font-size: 0.75rem; font-weight: 600;
+  }
+  .badge-green { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+  .badge-yellow { background: rgba(234,179,8,0.15); color: var(--yellow); border: 1px solid rgba(234,179,8,0.3); }
+  .badge-red { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+  .badge-blue { background: rgba(99,102,241,0.15); color: var(--accent-light); border: 1px solid rgba(99,102,241,0.3); }
+  table { width: 100%; border-collapse: collapse; margin: 0.5rem 0; }
+  th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--card-border); font-size: 0.85rem; }
+  th { color: var(--text-dim); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  td { color: var(--text); }
+  code {
+    background: #0d0f17; padding: 0.15rem 0.4rem; border-radius: 0.25rem;
+    font-family: 'SF Mono', Monaco, Consolas, monospace; font-size: 0.82rem;
+    color: var(--accent-light);
+  }
+  .info-row { display: flex; gap: 0.5rem; margin: 0.3rem 0; font-size: 0.85rem; }
+  .info-label { color: var(--text-dim); min-width: 100px; }
+  .info-value { color: var(--text); }
+  .section { margin: 2rem 0; }
+  .summary-stats { display: flex; gap: 2rem; margin: 1.5rem 0; }
+  .stat { text-align: center; }
+  .stat-num { font-size: 2rem; font-weight: 700; color: var(--accent-light); }
+  .stat-label { font-size: 0.8rem; color: var(--text-dim); }
+  .fix-list { list-style: none; }
+  .fix-list li { padding: 0.5rem 0; border-bottom: 1px solid var(--card-border); font-size: 0.85rem; }
+  .fix-list li:last-child { border-bottom: none; }
+  .provider-tag {
+    display: inline-block; padding: 0.1rem 0.5rem; border-radius: 0.25rem;
+    font-size: 0.7rem; font-weight: 600; margin-left: 0.5rem;
+  }
+  .tag-cn { background: rgba(239,68,68,0.15); color: #f87171; }
+  .tag-intl { background: rgba(99,102,241,0.15); color: var(--accent-light); }
+  .doc-link { color: var(--accent-light); text-decoration: none; font-size: 0.8rem; }
+  .doc-link:hover { text-decoration: underline; }
+  .note {
+    background: rgba(234,179,8,0.08); border: 1px solid rgba(234,179,8,0.2);
+    border-radius: 0.5rem; padding: 0.75rem 1rem; margin: 1rem 0;
+    font-size: 0.82rem; color: var(--yellow);
+  }
+  .footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--card-border); color: var(--text-dim); font-size: 0.8rem; }
+</style>
+</head>
+<body>
+
+<h1>PolyRader CS2 — LLM 接入状态报告</h1>
+<p class="subtitle">生成时间：2026-06-22 | 基于 12 家 LLM 提供商官方文档验证</p>
+
+<div class="summary-stats">
+  <div class="stat"><div class="stat-num">12</div><div class="stat-label">提供商总数</div></div>
+  <div class="stat"><div class="stat-num">6</div><div class="stat-label">国产 LLM</div></div>
+  <div class="stat"><div class="stat-num">6</div><div class="stat-label">国际 LLM</div></div>
+  <div class="stat"><div class="stat-num">12</div><div class="stat-label">OpenAI 兼容</div></div>
+  <div class="stat"><div class="stat-num">100%</div><div class="stat-label">最新模型版本</div></div>
+</div>
+
+<h2>一、总览表</h2>
+<div class="card">
+<table>
+<thead>
+<tr>
+  <th>#</th><th>提供商</th><th>类型</th><th>默认模型</th><th>Base URL</th><th>推理参数</th><th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>OpenAI</td><td><span class="provider-tag tag-intl">国际</span></td><td><code>gpt-5.5</code></td><td><code>api.openai.com</code></td><td><code>reasoning.effort</code></td><td><span class="badge badge-green">已验证</span></td></tr>
+<tr><td>2</td><td>Anthropic</td><td><span class="provider-tag tag-intl">国际</span></td><td><code>claude-sonnet-4-6</code></td><td><code>api.anthropic.com</code></td><td>temperature 守卫</td><td><span class="badge badge-green">已验证</span></td></tr>
+<tr><td>3</td><td>Google Gemini</td><td><span class="provider-tag tag-intl">国际</span></td><td><code>gemini-3.5-flash</code></td><td><code>generativelanguage.googleapis.com</code></td><td><code>thinkingConfig.thinkingLevel</code></td><td><span class="badge badge-green">已验证</span></td></tr>
+<tr><td>4</td><td>DeepSeek</td><td><span class="provider-tag tag-intl">国际</span></td><td><code>deepseek-v4-flash</code></td><td><code>api.deepseek.com</code></td><td>—</td><td><span class="badge badge-green">已验证</span></td></tr>
+<tr><td>5</td><td>xAI (Grok)</td><td><span class="provider-tag tag-intl">国际</span></td><td><code>grok-4.3</code></td><td><code>api.x.ai</code></td><td><code>reasoning_effort</code></td><td><span class="badge badge-green">已验证</span></td></tr>
+<tr><td>6</td><td>Groq</td><td><span class="provider-tag tag-intl">国际</span></td><td><code>llama-3.3-70b-versatile</code></td><td><code>api.groq.com</code></td><td>—</td><td><span class="badge badge-green">已验证</span></td></tr>
+<tr><td>7</td><td>通义千问 Qwen</td><td><span class="provider-tag tag-cn">国产</span></td><td><code>qwen3.7-max</code></td><td><code>dashscope.aliyuncs.com/compatible-mode/v1</code></td><td><code>enable_thinking: true</code></td><td><span class="badge badge-green">已验证</span></td></tr>
+<tr><td>8</td><td>月之暗面 Kimi</td><td><span class="provider-tag tag-cn">国产</span></td><td><code>kimi-k2.7-code</code></td><td><code>api.moonshot.ai/v1</code></td><td><code>thinking: { type: 'enabled' }</code></td><td><span class="badge badge-green">已验证</span></td></tr>
+<tr><td>9</td><td>智谱 GLM</td><td><span class="provider-tag tag-cn">国产</span></td><td><code>glm-5.2</code></td><td><code>open.bigmodel.cn/api/paas/v4</code></td><td><code>enable_thinking + reasoning_effort</code></td><td><span class="badge badge-green">已验证</span></td></tr>
+<tr><td>10</td><td>字节豆包 Doubao</td><td><span class="provider-tag tag-cn">国产</span></td><td><code>doubao-seed-2-0-pro-260215</code></td><td><code>ark.cn-beijing.volces.com/api/v3</code></td><td>官方 SDK <code>@volcengine/ark-runtime</code></td><td><span class="badge badge-green">已修复</span></td></tr>
+<tr><td>11</td><td>MiniMax</td><td><span class="provider-tag tag-cn">国产</span></td><td><code>MiniMax-M3</code></td><td><code>api.minimaxi.com/v1</code></td><td><code>reasoning_split: true</code></td><td><span class="badge badge-green">已修复</span></td></tr>
+<tr><td>12</td><td>腾讯混元 Hunyuan</td><td><span class="provider-tag tag-cn">国产</span></td><td><code>hy3-preview</code></td><td><code>tokenhub.tencentmaas.com/v1</code></td><td>OpenAI 兼容</td><td><span class="badge badge-green">已修复</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>二、国产 LLM 详细接入情况</h2>
+<div class="grid grid-2">
+
+<!-- Qwen -->
+<div class="card">
+  <div class="card-header">
+    <h3>7. 通义千问 Qwen <span class="provider-tag tag-cn">国产</span></h3>
+    <span class="badge badge-green">已验证</span>
+  </div>
+  <div class="info-row"><span class="info-label">提供商</span><span class="info-value">阿里云百炼</span></div>
+  <div class="info-row"><span class="info-label">默认模型</span><span class="info-value"><code>qwen3.7-max</code></span></div>
+  <div class="info-row"><span class="info-label">Base URL</span><span class="info-value"><code>https://dashscope.aliyuncs.com/compatible-mode/v1</code></span></div>
+  <div class="info-row"><span class="info-label">API 格式</span><span class="info-value">OpenAI 兼容 <code>/chat/completions</code></span></div>
+  <div class="info-row"><span class="info-label">认证方式</span><span class="info-value"><code>Authorization: Bearer {API_KEY}</code></span></div>
+  <div class="info-row"><span class="info-label">官方 SDK</span><span class="info-value">无独立 Node.js SDK，使用 OpenAI SDK</span></div>
+  <div class="info-row"><span class="info-label">推理参数</span><span class="info-value"><code>enable_thinking: true</code>（Qwen3.x 独有）</span></div>
+  <div class="info-row"><span class="info-label">上下文窗口</span><span class="info-value">1M tokens</span></div>
+  <div class="info-row"><span class="info-label">官方文档</span><span class="info-value"><a class="doc-link" href="https://help.aliyun.com/zh/model-studio/developer-reference/use-qwen-by-calling-api">help.aliyun.com/zh/model-studio</a></span></div>
+  <div class="note">官方支持 <code>enable_thinking</code> 和 <code>thinking_budget</code> 参数，当前已启用 <code>enable_thinking: true</code>。Node.js SDK 最低版本要求 4.68.0。</div>
+</div>
+
+<!-- Moonshot -->
+<div class="card">
+  <div class="card-header">
+    <h3>8. 月之暗面 Kimi <span class="provider-tag tag-cn">国产</span></h3>
+    <span class="badge badge-green">已验证</span>
+  </div>
+  <div class="info-row"><span class="info-label">提供商</span><span class="info-value">Moonshot AI</span></div>
+  <div class="info-row"><span class="info-label">默认模型</span><span class="info-value"><code>kimi-k2.7-code</code></span></div>
+  <div class="info-row"><span class="info-label">Base URL</span><span class="info-value"><code>https://api.moonshot.ai/v1</code></span></div>
+  <div class="info-row"><span class="info-label">API 格式</span><span class="info-value">OpenAI 兼容 <code>/chat/completions</code></span></div>
+  <div class="info-row"><span class="info-label">认证方式</span><span class="info-value"><code>Authorization: Bearer {API_KEY}</code></span></div>
+  <div class="info-row"><span class="info-label">官方 SDK</span><span class="info-value">无独立 SDK，使用 OpenAI SDK</span></div>
+  <div class="info-row"><span class="info-label">推理参数</span><span class="info-value"><code>thinking: { type: 'enabled' }</code></span></div>
+  <div class="info-row"><span class="info-label">上下文窗口</span><span class="info-value">256K tokens</span></div>
+  <div class="info-row"><span class="info-label">官方文档</span><span class="info-value"><a class="doc-link" href="https://platform.moonshot.ai/docs/api/chat">platform.moonshot.ai/docs/api/chat</a></span></div>
+  <div class="note">K2.7-Code 于 2026-06-12 正式发布，是 K2.6 的继任者（+21.8% Kimi Code Bench v2）。始终启用 thinking 模式（不可关闭），温度固定 1.0、top_p 0.95。1T 参数 MoE 架构，32B 激活，256K 上下文。</div>
+</div>
+
+<!-- Zhipu -->
+<div class="card">
+  <div class="card-header">
+    <h3>9. 智谱 GLM <span class="provider-tag tag-cn">国产</span></h3>
+    <span class="badge badge-green">已验证</span>
+  </div>
+  <div class="info-row"><span class="info-label">提供商</span><span class="info-value">智谱 AI (Z.AI)</span></div>
+  <div class="info-row"><span class="info-label">默认模型</span><span class="info-value"><code>glm-5.2</code></span></div>
+  <div class="info-row"><span class="info-label">Base URL</span><span class="info-value"><code>https://open.bigmodel.cn/api/paas/v4</code></span></div>
+  <div class="info-row"><span class="info-label">API 格式</span><span class="info-value">OpenAI 兼容 <code>/chat/completions</code></span></div>
+  <div class="info-row"><span class="info-label">认证方式</span><span class="info-value"><code>Authorization: Bearer {API_KEY}</code></span></div>
+  <div class="info-row"><span class="info-label">官方 SDK</span><span class="info-value">Python: <code>zai-sdk</code>；无 Node.js SDK，使用 OpenAI SDK</span></div>
+  <div class="info-row"><span class="info-label">推理参数</span><span class="info-value"><code>enable_thinking: true, reasoning_effort: 'max'</code></span></div>
+  <div class="info-row"><span class="info-label">上下文窗口</span><span class="info-value">1M tokens（真正可用）</span></div>
+  <div class="info-row"><span class="info-label">官方文档</span><span class="info-value"><a class="doc-link" href="https://docs.bigmodel.cn/cn/api/introduction">docs.bigmodel.cn/cn/api/introduction</a></span></div>
+  <div class="note">GLM-5.2 支持思考模式，<code>reasoning_effort</code> 可选 <code>max</code>/<code>high</code>/<code>none</code>。MoE 架构，7450 亿总参数，440 亿激活参数，华为昇腾训练。</div>
+</div>
+
+<!-- Doubao -->
+<div class="card">
+  <div class="card-header">
+    <h3>10. 字节豆包 Doubao <span class="provider-tag tag-cn">国产</span></h3>
+    <span class="badge badge-yellow">已修复</span>
+  </div>
+  <div class="info-row"><span class="info-label">提供商</span><span class="info-value">字节跳动 / 火山引擎</span></div>
+  <div class="info-row"><span class="info-label">默认模型</span><span class="info-value"><code>doubao-seed-2-0-pro-260215</code> <span class="badge badge-red">已修复</span></span></div>
+  <div class="info-row"><span class="info-label">Base URL</span><span class="info-value"><code>https://ark.cn-beijing.volces.com/api/v3</code></span></div>
+  <div class="info-row"><span class="info-label">API 格式</span><span class="info-value">OpenAI 兼容 <code>/chat/completions</code></span></div>
+  <div class="info-row"><span class="info-label">认证方式</span><span class="info-value"><code>Authorization: Bearer {ARK_API_KEY}</code></span></div>
+  <div class="info-row"><span class="info-label">官方 SDK</span><span class="info-value">Node.js: <code>@volcengine/ark-runtime</code> <span class="badge badge-green">已接入</span></span></div>
+  <div class="info-row"><span class="info-label">推理参数</span><span class="info-value"><code>thinking: { type: 'enabled' }</code></span></div>
+  <div class="info-row"><span class="info-label">上下文窗口</span><span class="info-value">1M tokens</span></div>
+  <div class="info-row"><span class="info-label">官方文档</span><span class="info-value"><a class="doc-link" href="https://www.volcengine.com/docs/82379/1399008">volcengine.com/docs/82379</a></span></div>
+  <div class="note"><strong>修复内容：</strong>① 模型 ID 从 <code>doubao-seed-2.0-pro</code>（点号）修正为 <code>doubao-seed-2-0-pro-260215</code>（连字符+日期后缀），符合火山引擎官方格式；② 接入官方 Node.js SDK <code>@volcengine/ark-runtime</code> 替代裸 fetch，获得连接池、自动重试、超时控制等生产级特性；③ 添加 <code>thinking: { type: 'enabled' }</code> 深度思考参数。</div>
+</div>
+
+<!-- MiniMax -->
+<div class="card">
+  <div class="card-header">
+    <h3>11. MiniMax <span class="provider-tag tag-cn">国产</span></h3>
+    <span class="badge badge-yellow">已修复</span>
+  </div>
+  <div class="info-row"><span class="info-label">提供商</span><span class="info-value">稀宇科技</span></div>
+  <div class="info-row"><span class="info-label">默认模型</span><span class="info-value"><code>MiniMax-M3</code></span></div>
+  <div class="info-row"><span class="info-label">Base URL</span><span class="info-value"><code>https://api.minimaxi.com/v1</code> <span class="badge badge-red">已修复</span></span></div>
+  <div class="info-row"><span class="info-label">API 格式</span><span class="info-value">OpenAI 兼容 <code>/chat/completions</code></span></div>
+  <div class="info-row"><span class="info-label">认证方式</span><span class="info-value"><code>Authorization: Bearer {API_KEY}</code></span></div>
+  <div class="info-row"><span class="info-label">官方 SDK</span><span class="info-value">支持 OpenAI SDK 和 Anthropic SDK；无独立 Node.js SDK</span></div>
+  <div class="info-row"><span class="info-label">推理参数</span><span class="info-value"><code>reasoning_split: true</code>（分离思考内容到 <code>reasoning_details</code>）</span></div>
+  <div class="info-row"><span class="info-label">上下文窗口</span><span class="info-value">1M tokens</span></div>
+  <div class="info-row"><span class="info-label">官方文档</span><span class="info-value"><a class="doc-link" href="https://platform.minimaxi.com/docs/api-reference/text-openai-api">platform.minimaxi.com/docs</a></span></div>
+  <div class="note"><strong>修复内容：</strong>Base URL 从 <code>api.minimax.io</code>（国际版）修正为 <code>api.minimaxi.com</code>（国内版），API Key 不互通。同时添加了 <code>reasoning_split: true</code> 参数。M3 于 2026-06-01 发布，MSA 架构，100 万 token 上下文。</div>
+</div>
+
+<!-- Hunyuan -->
+<div class="card">
+  <div class="card-header">
+    <h3>12. 腾讯混元 Hunyuan <span class="provider-tag tag-cn">国产</span></h3>
+    <span class="badge badge-yellow">已修复</span>
+  </div>
+  <div class="info-row"><span class="info-label">提供商</span><span class="info-value">腾讯云 TokenHub</span></div>
+  <div class="info-row"><span class="info-label">默认模型</span><span class="info-value"><code>hy3-preview</code> <span class="badge badge-red">已修复</span></span></div>
+  <div class="info-row"><span class="info-label">Base URL</span><span class="info-value"><code>https://tokenhub.tencentmaas.com/v1</code> <span class="badge badge-red">已修复</span></span></div>
+  <div class="info-row"><span class="info-label">API 格式</span><span class="info-value">OpenAI 兼容 <code>/chat/completions</code></span></div>
+  <div class="info-row"><span class="info-label">认证方式</span><span class="info-value"><code>Authorization: Bearer {API_KEY}</code></span></div>
+  <div class="info-row"><span class="info-label">官方 SDK</span><span class="info-value">使用 OpenAI SDK（官方推荐）</span></div>
+  <div class="info-row"><span class="info-label">推理参数</span><span class="info-value">标准 OpenAI 参数（temperature 等）</span></div>
+  <div class="info-row"><span class="info-label">上下文窗口</span><span class="info-value">256K tokens</span></div>
+  <div class="info-row"><span class="info-label">官方文档</span><span class="info-value"><a class="doc-link" href="https://cloud.tencent.com/document/product/1823/132252">cloud.tencent.com/document/product/1823</a></span></div>
+  <div class="note"><strong>修复内容：</strong>① 模型从 <code>hunyuan-turbos-latest</code>（将于 2026-06-26 下线）迁移至 <code>hy3-preview</code>（TokenHub 新平台，MoE 架构，支持交错式思考）；② Base URL 从旧平台改为 <code>tokenhub.tencentmaas.com/v1</code>（TokenHub 广州接入点）；③ 移除已废弃的 <code>enable_enhancement</code> 参数。</div>
+</div>
+
+</div>
+
+<h2>三、SDK 接入评估</h2>
+<div class="card">
+  <h3>SDK 可用性总结</h3>
+  <table>
+  <thead>
+  <tr><th>提供商</th><th>官方 Node.js SDK</th><th>OpenAI SDK 兼容</th><th>当前接入方式</th><th>评估</th></tr>
+  </thead>
+  <tbody>
+  <tr><td>Qwen</td><td>无</td><td>是</td><td>fetch</td><td>OpenAI SDK 为官方推荐方式，当前 fetch 实现等效</td></tr>
+  <tr><td>Moonshot</td><td>无</td><td>是</td><td>fetch</td><td>官方明确推荐 OpenAI SDK，当前 fetch 实现等效</td></tr>
+  <tr><td>Zhipu</td><td>无（仅 Python <code>zai-sdk</code>）</td><td>是</td><td>fetch</td><td>Node.js 无官方 SDK，OpenAI SDK 为推荐替代</td></tr>
+  <tr><td>Doubao</td><td><code>@volcengine/ark-runtime</code></td><td>是</td><td>官方 SDK</td><td>已接入官方 SDK，获得连接池、重试、超时控制</td></tr>
+  <tr><td>MiniMax</td><td>无</td><td>是（OpenAI + Anthropic）</td><td>fetch</td><td>官方推荐 OpenAI SDK，当前 fetch 实现等效</td></tr>
+  <tr><td>Hunyuan</td><td>无（腾讯云 SDK 为签名方式）</td><td>是</td><td>fetch</td><td>TokenHub 平台官方推荐 OpenAI SDK，当前 fetch 实现等效</td></tr>
+  </tbody>
+  </table>
+  <div class="note">
+    <strong>结论：</strong>12 家 LLM 提供商均完全兼容 OpenAI API 格式。豆包已接入官方 Node.js SDK <code>@volcengine/ark-runtime</code>，其余 5 家国产 LLM 提供商官方均推荐使用 OpenAI SDK 调用，当前项目采用 <code>fetch</code> 直接调用，与 OpenAI SDK 功能等效，且具有以下优势：
+    <ul style="margin: 0.5rem 0 0 1.5rem;">
+      <li>无额外依赖，减少包体积</li>
+      <li>统一代码模式，11 家提供商实现结构一致</li>
+      <li>完全控制请求体结构，便于添加提供商特有参数（如 <code>enable_thinking</code>、<code>reasoning_split</code>）</li>
+      <li>避免 SDK 版本升级带来的 breaking change 风险</li>
+    </ul>
+  </div>
+</div>
+
+<h2>四、本次修复内容</h2>
+<div class="card">
+  <ul class="fix-list">
+    <li><strong>Kimi 模型版本统一</strong> — <code>kimi-k2.6</code> → <code>kimi-k2.7-code</code>（2026-06-12 发布，4 处：客户端构造函数、工厂 switch、getDefaultModel、连通性脚本）</li>
+    <li><strong>豆包模型 ID 格式修复</strong> — <code>doubao-seed-2.0-pro</code> → <code>doubao-seed-2-0-pro-260215</code>（连字符+日期后缀，符合火山引擎官方格式）</li>
+    <li><strong>豆包接入官方 SDK</strong> — 从裸 <code>fetch</code> 迁移至 <code>@volcengine/ark-runtime</code> 官方 Node.js SDK，获得连接池、自动重试、超时控制等生产级特性</li>
+    <li><strong>混元平台迁移</strong> — <code>hunyuan-turbos-latest</code>（2026-06-26 下线）→ <code>hy3-preview</code>（TokenHub 新平台，MoE 架构），Base URL 改为 <code>tokenhub.tencentmaas.com/v1</code></li>
+    <li><strong>MiniMax Base URL 修复</strong> — 使用国内版 <code>api.minimaxi.com/v1</code>（非国际版 <code>api.minimax.io</code>）</li>
+    <li><strong>MiniMax 推理参数</strong> — 添加 <code>reasoning_split: true</code> 分离思考内容到 <code>reasoning_details</code> 字段</li>
+    <li><strong>Qwen 推理参数</strong> — 添加 <code>enable_thinking: true</code> 启用 Qwen3.x 深度思考模式</li>
+    <li><strong>GLM 推理参数</strong> — 添加 <code>enable_thinking: true</code> + <code>reasoning_effort: 'max'</code> 启用 GLM-5.2 思考模式</li>
+    <li><strong>Kimi thinking 参数</strong> — 添加 <code>thinking: { type: 'enabled' }</code> 显式启用 K2.7-Code thinking 模式</li>
+  </ul>
+</div>
+
+<h2>五、官方文档参考</h2>
+<div class="card">
+  <table>
+  <thead>
+  <tr><th>提供商</th><th>文档地址</th><th>更新日期</th></tr>
+  </thead>
+  <tbody>
+  <tr><td>Qwen</td><td><a class="doc-link" href="https://help.aliyun.com/zh/model-studio/compatibility-with-openai-responses-api">help.aliyun.com — OpenAI 兼容</a></td><td>2026-06-18</td></tr>
+  <tr><td>Moonshot</td><td><a class="doc-link" href="https://platform.moonshot.ai/docs/api/chat">platform.moonshot.ai/docs/api/chat</a></td><td>2026-06</td></tr>
+  <tr><td>Zhipu</td><td><a class="doc-link" href="https://docs.bigmodel.cn/cn/api/introduction">docs.bigmodel.cn/cn/api/introduction</a></td><td>2026-06</td></tr>
+  <tr><td>Doubao</td><td><a class="doc-link" href="https://www.volcengine.com/docs/82379/1399008">volcengine.com/docs/82379 — 快速入门</a></td><td>2026-06</td></tr>
+  <tr><td>MiniMax</td><td><a class="doc-link" href="https://platform.minimaxi.com/docs/api-reference/text-openai-api">platform.minimaxi.com — OpenAI SDK</a></td><td>2026-06</td></tr>
+  <tr><td>Hunyuan</td><td><a class="doc-link" href="https://cloud.tencent.com/document/product/1823/132252">cloud.tencent.com — TokenHub 混元调用指南</a></td><td>2026-06-18</td></tr>
+  </tbody>
+  </table>
+</div>
+
+<h2>六、架构说明</h2>
+<div class="card">
+  <h3>客户端架构</h3>
+  <div class="info-row"><span class="info-label">接口定义</span><span class="info-value"><code>LLMClient</code> 接口 — <code>analyze()</code> / <code>complete()</code> / <code>testConnection()</code> / <code>getQuota()</code></span></div>
+  <div class="info-row"><span class="info-label">工厂模式</span><span class="info-value"><code>LLMClientFactory.create(provider, apiKey, model?)</code> — 根据 provider 创建对应客户端</span></div>
+  <div class="info-row"><span class="info-label">熔断器</span><span class="info-value"><code>CircuitBreakerLLMClient</code> 包装器 — 自动熔断 + 重试</span></div>
+  <div class="info-row"><span class="info-label">三重默认值</span><span class="info-value">客户端构造函数 → 工厂 switch → <code>getDefaultModel()</code>（三处保持同步）</span></div>
+  <div class="info-row"><span class="info-label">文件位置</span><span class="info-value"><code>packages/infra/src/clients/llm/</code></span></div>
+</div>
+
+<div class="footer">
+  PolyRader CS2 — LLM 接入状态报告 | 基于 12 家 LLM 提供商官方文档验证 | 生成于 2026-06-22
+</div>
+
+</body>
+</html>

@@ -10,13 +10,41 @@ describe('SignalComparisonEngine', () => {
     expect(result.marketId).toBe('market-1');
     expect(result.polymarketProb).toBe(0.55);
     expect(result.predictedProb).toBe(0.62);
-    expect(result.signals).toHaveLength(3); // polymarket + model + hltv
+    expect(result.signals).toHaveLength(3); // polymarket + model + hltv_odds
+    expect(result.signals.some((s) => s.source === 'hltv_odds')).toBe(true);
   });
 
   it('should calculate deviation correctly', () => {
     const result = engine.compareSignals('m1', 0.5, 0.7);
 
     expect(result.deviation).toBeCloseTo(0.2, 2);
+  });
+
+  it('should combine behavior and AI debate signals into final probability', () => {
+    const result = engine.compareSignals(
+      'm1',
+      0.5,
+      0.55,
+      undefined,
+      [
+        {
+          source: 'market_behavior',
+          probability: 0.65,
+          confidence: 0.8,
+          lastUpdated: '2026-01-01T00:00:00Z',
+        },
+        {
+          source: 'ai_debate',
+          probability: 0.7,
+          confidence: 0.75,
+          lastUpdated: '2026-01-01T00:00:00Z',
+        },
+      ],
+    );
+
+    expect(result.finalProb).toBeGreaterThan(result.predictedProb);
+    expect(result.edge).toBeGreaterThan(0);
+    expect(result.recommendation).toBe('buy_yes');
   });
 
   it('should detect arbitrage opportunities', () => {

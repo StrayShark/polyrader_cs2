@@ -4,6 +4,7 @@ import type {
   ConsensusResult,
   KellyAllocation,
   WinProbability,
+  LLMStats,
 } from '../types/index';
 import { KELLY_FRACTION_CAP } from '../scoring/weights';
 
@@ -12,11 +13,30 @@ import { KELLY_FRACTION_CAP } from '../scoring/weights';
  *
  * Process:
  *   1. Collect results from all LLM providers
- *   2. Weight by provider reliability (historical accuracy)
+ *   2. Weight by provider reliability (historical accuracy + calibration)
  *   3. Detect consensus level
  *   4. Calculate Kelly Criterion fund allocation
  */
 export class ResultAggregator {
+  /**
+   * Compute provider weights from historical stats using calibration error.
+   *
+   * Weight = max(0.1, 1 - calibrationError * 2) * min(1, totalPredictions / 10)
+   *
+   * Providers with few predictions (< 10) get a discount to avoid over-weighting
+   * lucky early guesses. Providers with high calibration error get penalized.
+   * A floor of 0.1 ensures no provider is fully zeroed out.
+   */
+  static computeProviderWeights(stats: LLMStats[]): Record<string, number> {
+    const weights: Record<string, number> = {};
+    for (const s of stats) {
+      const calibrationPenalty = Math.max(0.1, 1 - s.calibrationError * 2);
+      const sampleSizeFactor = Math.min(1, s.totalPredictions / 10);
+      weights[s.provider] = calibrationPenalty * sampleSizeFactor;
+    }
+    return weights;
+  }
+
   /**
    * Aggregate multiple LLM results into a single prediction.
    */
@@ -24,6 +44,7 @@ export class ResultAggregator {
     matchId: string,
     results: LLMAnalysisResult[],
     providerWeights?: Record<string, number>,
+    marketProbA?: number,
   ): LLMAggregation {
     const validResults = results.filter((r) => !r.error);
 
@@ -37,6 +58,7 @@ export class ResultAggregator {
       aggregatedProbability,
       validResults,
       consensus,
+      marketProbA,
     );
 
     return {
@@ -122,6 +144,7 @@ export class ResultAggregator {
     probability: WinProbability,
     results: LLMAnalysisResult[],
     consensus: ConsensusResult,
+    marketProbA?: number,
   ): KellyAllocation {
     const avgConfidence = results.reduce((s, r) => s + r.confidence, 0) / results.length;
 
@@ -138,9 +161,30 @@ export class ResultAggregator {
 
     const bestProb = Math.max(probability.teamA, probability.teamB);
     const bestTeam = probability.teamA > probability.teamB ? 'team_a' : 'team_b';
+    if (marketProbA === undefined || !Number.isFinite(marketProbA)) {
+      return {
+        teamAAllocation: 0,
+        teamBAllocation: 0,
+        recommendedBet: 'skip',
+        kellyFraction: 0,
+        bankrollFraction: 0,
+      };
+    }
 
-    // Assume fair odds (implied from probability)
-    const odds = 1 / bestProb;
+    const marketProb = bestTeam === 'team_a' ? marketProbA : 1 - marketProbA;
+    if (marketProb <= 0 || marketProb >= 1 || bestProb <= marketProb) {
+      return {
+        teamAAllocation: 0,
+        teamBAllocation: 0,
+        recommendedBet: 'skip',
+        kellyFraction: 0,
+        bankrollFraction: 0,
+      };
+    }
+
+    // Use market odds as payout price. Model probability is p; market price
+    // determines odds. This is the actual Kelly edge.
+    const odds = 1 / marketProb;
     const b = odds - 1;
     const p = bestProb;
     const q = 1 - p;

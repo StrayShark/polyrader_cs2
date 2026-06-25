@@ -17,7 +17,7 @@ export function runMigrations(): void {
     )
   `);
 
-  const migrations = ['001_initial_schema.sql', '002_add_clob_token_ids.sql', '003_add_bet_allocation.sql', '004_add_risk_metrics.sql', '005_add_prompt_ab_testing.sql', '006_add_decision_journal.sql', '007_add_alerts.sql', '008_add_simulation_config.sql'];
+  const migrations = ['001_initial_schema.sql', '002_add_clob_token_ids.sql', '003_add_bet_allocation.sql', '004_add_risk_metrics.sql', '005_add_prompt_ab_testing.sql', '006_add_decision_journal.sql', '007_add_alerts.sql', '008_add_simulation_config.sql', '009_esports_data_normalization.sql', '010_tier_and_analysis_config.sql', '011_history_months_config.sql', '012_min_volume_usd_config.sql', '013_signal_snapshots.sql', '014_signal_tuning_config.sql', '015_market_resolution_fields.sql', '016_hltv_match_id.sql', '017_wallet_performance_fields.sql', '018_wallet_follow_copy.sql', '019_copy_cs2_volume_filters.sql'];
 
   for (const name of migrations) {
     const row = db

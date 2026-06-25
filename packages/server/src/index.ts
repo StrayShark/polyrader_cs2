@@ -9,6 +9,7 @@ import { startCronJobs } from './cron';
 import { checkHealth, setWsServer } from './health';
 import { validateEnv } from './utils/env';
 import { logger } from './utils/logger';
+import { PolymarketStreamService } from './services/polymarket-stream-service';
 
 // Validate environment at startup
 const envResult = validateEnv();
@@ -35,6 +36,7 @@ const isDev = process.env.NODE_ENV !== 'production';
 const isSidecar = process.argv.some((arg) => arg.startsWith('--port='));
 
 const app = express();
+const polymarketStream = new PolymarketStreamService();
 
 // ============================================================
 // Security (simplified for local desktop app)
@@ -141,6 +143,7 @@ httpServer.listen(PORT, '127.0.0.1', () => {
 
 // Cron jobs
 startCronJobs();
+void polymarketStream.start(20);
 
 // ============================================================
 // Graceful shutdown
@@ -154,6 +157,7 @@ async function shutdown(signal: string): Promise<void> {
   logger.info('Graceful shutdown initiated', { signal });
 
   // Close all WS connections
+  polymarketStream.stop();
   for (const client of wss.clients) {
     client.close(1001, 'Server shutting down');
   }

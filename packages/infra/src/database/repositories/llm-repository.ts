@@ -206,10 +206,27 @@ export class LLMRepository {
     maps: string[];
     hasTeamData: boolean;
     lineups?: string | null;
+    hltvMatchId?: string | null;
   }): void {
+    // Ensure team rows exist to satisfy FOREIGN KEY constraint on matches table
+    if (match.teamAId) {
+      query(
+        `INSERT OR IGNORE INTO teams (team_id, name, rank, region, players, recent_form, map_pool, updated_at)
+         VALUES (?, ?, 999, '', '[]', '{}', '{}', datetime('now'))`,
+        match.teamAId, match.teamAName,
+      );
+    }
+    if (match.teamBId) {
+      query(
+        `INSERT OR IGNORE INTO teams (team_id, name, rank, region, players, recent_form, map_pool, updated_at)
+         VALUES (?, ?, 999, '', '[]', '{}', '{}', datetime('now'))`,
+        match.teamBId, match.teamBName,
+      );
+    }
+
     query(
-      `INSERT INTO matches (match_id, team_a_id, team_b_id, team_a_name, team_b_name, event_name, event_type, format, scheduled_at, status, maps, has_team_data, lineups, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      `INSERT INTO matches (match_id, team_a_id, team_b_id, team_a_name, team_b_name, event_name, event_type, format, scheduled_at, status, maps, has_team_data, lineups, hltv_match_id, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
        ON CONFLICT(match_id) DO UPDATE SET
          team_a_name = excluded.team_a_name,
          team_b_name = excluded.team_b_name,
@@ -221,6 +238,7 @@ export class LLMRepository {
          maps = excluded.maps,
          has_team_data = excluded.has_team_data,
          lineups = COALESCE(excluded.lineups, matches.lineups),
+         hltv_match_id = COALESCE(excluded.hltv_match_id, matches.hltv_match_id),
          updated_at = datetime('now')`,
       match.matchId,
       match.teamAId,
@@ -235,6 +253,7 @@ export class LLMRepository {
       JSON.stringify(match.maps),
       match.hasTeamData ? 1 : 0,
       match.lineups ?? null,
+      match.hltvMatchId ?? null,
     );
   }
 
@@ -270,8 +289,30 @@ export class LLMRepository {
 
   getUpcomingMatches(limit = 50): Array<Record<string, unknown>> {
     return query<Record<string, unknown>>(
-      `SELECT * FROM matches WHERE status = 'upcoming' ORDER BY scheduled_at ASC LIMIT ?`,
+      `SELECT * FROM matches WHERE status IN ('scheduled', 'pre_match', 'upcoming') ORDER BY scheduled_at ASC LIMIT ?`,
       limit,
+    );
+  }
+
+  /**
+   * Update match status (persist MatchStateMachine state to DB).
+   * Allows cron jobs to filter by state instead of guessing from timestamps.
+   */
+  updateMatchStatus(matchId: string, status: string): void {
+    query(
+      `UPDATE matches SET status = ?, updated_at = datetime('now') WHERE match_id = ?`,
+      status,
+      matchId,
+    );
+  }
+
+  /**
+   * Get all matches that are in an active (non-terminal) state.
+   * Used by the Polymarket refresh cron to apply state-dependent logic.
+   */
+  getActiveMatches(): Array<Record<string, unknown>> {
+    return query<Record<string, unknown>>(
+      `SELECT * FROM matches WHERE status NOT IN ('finished', 'settled', 'cancelled') ORDER BY scheduled_at ASC`,
     );
   }
 
@@ -542,5 +583,158 @@ export class LLMRepository {
       createdAt: row.created_at as string,
       updatedAt: row.updated_at as string,
     };
+  }
+
+  // --- Token Usage Aggregation ---
+
+  /**
+   * Aggregate token usage from llm_analyses for a specific provider.
+   * Returns total prompt/completion tokens and per-month breakdown.
+   */
+  getTokenUsageSummary(provider: LLMProvider): {
+    totalPromptTokens: number;
+    totalCompletionTokens: number;
+    totalTokens: number;
+    monthly: Array<{ month: string; promptTokens: number; completionTokens: number; totalTokens: number }>;
+  } {
+    const rows = query<{ prompt_tokens: number; completion_tokens: number; total_tokens: number; month: string }>(
+      `SELECT
+         CAST(json_extract(token_usage, '$.promptTokens') AS INTEGER) AS prompt_tokens,
+         CAST(json_extract(token_usage, '$.completionTokens') AS INTEGER) AS completion_tokens,
+         CAST(json_extract(token_usage, '$.totalTokens') AS INTEGER) AS total_tokens,
+         strftime('%Y-%m', created_at) AS month
+       FROM llm_analyses
+       WHERE provider = ? AND token_usage IS NOT NULL AND token_usage != '' AND error IS NULL`,
+      provider,
+    );
+
+    let totalPromptTokens = 0;
+    let totalCompletionTokens = 0;
+    let totalTokens = 0;
+    const monthMap = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>();
+
+    for (const r of rows) {
+      const pt = r.prompt_tokens ?? 0;
+      const ct = r.completion_tokens ?? 0;
+      const tt = r.total_tokens ?? (pt + ct);
+      totalPromptTokens += pt;
+      totalCompletionTokens += ct;
+      totalTokens += tt;
+
+      const m = r.month ?? 'unknown';
+      const existing = monthMap.get(m) ?? { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+      existing.promptTokens += pt;
+      existing.completionTokens += ct;
+      existing.totalTokens += tt;
+      monthMap.set(m, existing);
+    }
+
+    const monthly = Array.from(monthMap.entries())
+      .map(([month, v]) => ({ month, ...v }))
+      .sort((a, b) => b.month.localeCompare(a.month));
+
+    return { totalPromptTokens, totalCompletionTokens, totalTokens, monthly };
+  }
+
+  /**
+   * Refresh quota_used and cost_estimate for a provider based on aggregated token usage.
+   * Called after each analysis to keep usage stats current.
+   */
+  refreshQuota(provider: LLMProvider, pricing: { inputPricePerM: number; outputPricePerM: number }): void {
+    const summary = this.getTokenUsageSummary(provider);
+    const cost =
+      (summary.totalPromptTokens / 1_000_000) * pricing.inputPricePerM +
+      (summary.totalCompletionTokens / 1_000_000) * pricing.outputPricePerM;
+
+    query(
+      `UPDATE llm_configs SET quota_used = ?, cost_estimate = ?, updated_at = datetime('now') WHERE provider = ?`,
+      summary.totalTokens,
+      cost,
+      provider,
+    );
+  }
+
+  /**
+   * Get all analysis snapshots for a match, ordered by time.
+   * Used for the 24h win-rate timeline visualization (PRD §9.2).
+   */
+  getAnalysesByMatch(matchId: string, sinceHours = 24): Array<{
+    analysisId: string;
+    createdAt: string;
+    provider: LLMProvider;
+    model: string;
+    teamAProb: number;
+    teamBProb: number;
+    confidence: number;
+  }> {
+    const rows = query<Record<string, unknown>>(
+      `SELECT id, created_at, provider, model, team_a_prob, team_b_prob, confidence
+       FROM llm_analyses
+       WHERE match_id = ? AND error IS NULL
+         AND created_at >= datetime('now', ?)
+       ORDER BY created_at ASC`,
+      matchId,
+      `-${sinceHours} hours`,
+    );
+    return rows.map((row) => ({
+      analysisId: String(row.id),
+      createdAt: String(row.created_at),
+      provider: row.provider as LLMProvider,
+      model: String(row.model ?? ''),
+      teamAProb: Number(row.team_a_prob) || 0.5,
+      teamBProb: Number(row.team_b_prob) || 0.5,
+      confidence: Number(row.confidence) || 0,
+    }));
+  }
+
+  getAnalysesByProvider(
+    provider: LLMProvider,
+    limit = 200,
+  ): Array<{
+    analysisId: string;
+    matchId: string;
+    createdAt: string;
+    model: string;
+    teamAProb: number;
+    teamBProb: number;
+    confidence: number;
+    reasoning: string;
+    keyFactors: string[];
+    teamAName: string;
+    teamBName: string;
+    scheduledAt: string;
+    matchStatus: string;
+  }> {
+    const rows = query<Record<string, unknown>>(
+      `SELECT la.id, la.match_id, la.created_at, la.model, la.team_a_prob,
+              la.team_b_prob, la.confidence, la.reasoning, la.key_factors,
+              m.team_a_name, m.team_b_name, m.scheduled_at, m.status
+       FROM llm_analyses la
+       LEFT JOIN matches m ON la.match_id = m.match_id
+       WHERE la.provider = ? AND la.error IS NULL
+       ORDER BY la.created_at DESC
+       LIMIT ?`,
+      provider,
+      limit,
+    );
+    return rows.map((row) => {
+      let keyFactors: string[] = [];
+      try { keyFactors = JSON.parse(String(row.key_factors ?? '[]')); } catch { /* malformed */ }
+      return {
+        analysisId: String(row.id),
+        matchId: String(row.match_id ?? ''),
+        createdAt: String(row.created_at ?? ''),
+        model: String(row.model ?? ''),
+        teamAProb: Number(row.team_a_prob) || 0.5,
+        teamBProb: Number(row.team_b_prob) || 0.5,
+        confidence: Number(row.confidence) || 0,
+        reasoning: String(row.reasoning ?? ''),
+        keyFactors,
+        teamAName: String(row.team_a_name ?? 'Team A'),
+        teamBName: String(row.team_b_name ?? 'Team B'),
+        scheduledAt: String(row.scheduled_at ?? ''),
+        matchStatus: String(row.status ?? ''),
+      };
+    });
   }
 }

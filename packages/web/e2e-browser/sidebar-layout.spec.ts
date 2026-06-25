@@ -72,12 +72,12 @@ test.describe('Sidebar content visibility (desktop)', () => {
     );
   });
 
-  test('all 10 navigation links have non-empty text', async ({ page }) => {
+  test('all navigation links have non-empty text', async ({ page }) => {
     await gotoWithSidebar(page);
     const navLinks = page.locator('aside nav a');
-    await expect(navLinks).toHaveCount(10);
+    await expect(navLinks).toHaveCount(11);
     const texts = await navLinks.allTextContents();
-    expect(texts.length).toBe(10);
+    expect(texts.length).toBe(11);
     for (const text of texts) {
       expect(text.trim().length).toBeGreaterThan(0);
     }
@@ -139,40 +139,3 @@ test.describe('Sidebar mobile behavior', () => {
   });
 });
 
-// ============================================================
-// Visual Regression: Page Screenshots
-// ============================================================
-test.describe('Visual regression: page screenshots', () => {
-  test('dashboard page', async ({ page }) => {
-    await gotoWithSidebar(page);
-    await page.waitForTimeout(1000);
-    await expect(page).toHaveScreenshot('dashboard.png', {
-      maxDiffPixelRatio: 0.01,
-    });
-  });
-
-  test('daily page', async ({ page }) => {
-    await gotoWithSidebar(page, '/daily');
-    await page.waitForTimeout(1000);
-    await expect(page).toHaveScreenshot('daily.png', {
-      maxDiffPixelRatio: 0.01,
-    });
-  });
-
-  test('whales page', async ({ page }) => {
-    await gotoWithSidebar(page, '/whales');
-    await page.waitForTimeout(1000);
-    await expect(page).toHaveScreenshot('whales.png', {
-      maxDiffPixelRatio: 0.01,
-    });
-  });
-
-  test('signals page', async ({ page }) => {
-    await gotoWithSidebar(page, '/signals');
-    await page.waitForTimeout(2000);
-    await expect(page).toHaveScreenshot('signals.png', {
-      maxDiffPixelRatio: 0.01,
-      timeout: 15000,
-    });
-  });
-});

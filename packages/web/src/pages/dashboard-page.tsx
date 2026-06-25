@@ -22,9 +22,19 @@ interface DashboardAnalysis {
   signalCount: number;
 }
 
+interface MarketAnomaly {
+  conditionId: string;
+  question: string;
+  type: 'price_spike' | 'volume_surge';
+  severity: 'low' | 'medium' | 'high';
+  detail: string;
+  value: number;
+}
+
 export function DashboardPage() {
   const { markets, isLoading, error, fetchMarkets } = useMarketStore();
   const [analysis, setAnalysis] = useState<DashboardAnalysis | null>(null);
+  const [anomalies, setAnomalies] = useState<MarketAnomaly[]>([]);
   const { subscribe } = useWebSocket();
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -65,6 +75,9 @@ export function DashboardPage() {
   useEffect(() => {
     api.get<{ data: DashboardAnalysis }>('/signals/top')
       .then(({ data }) => setAnalysis(data))
+      .catch(() => {});
+    api.get<{ data: MarketAnomaly[] }>('/markets/anomalies')
+      .then(({ data }) => setAnomalies(data ?? []))
       .catch(() => {});
   }, []);
 
@@ -113,6 +126,48 @@ export function DashboardPage() {
       {/* Market Heatmap */}
       {!isLoading && safeMarkets.length > 0 && (
         <MarketHeatmap markets={safeMarkets} />
+      )}
+
+      {/* Anomaly Markets */}
+      {anomalies.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Activity className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-sm font-medium">{t('dashboard.anomalies')}</h2>
+            </div>
+          </CardHeader>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="px-6 py-2">{t('common.market')}</TableHead>
+                <TableHead className="px-6 py-2">{t('common.type')}</TableHead>
+                <TableHead className="px-6 py-2">{t('common.detail')}</TableHead>
+                <TableHead className="px-6 py-2 text-right">{t('common.severity')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {anomalies.slice(0, 8).map((a) => (
+                <TableRow
+                  key={`${a.conditionId}-${a.type}`}
+                  className="cursor-pointer"
+                  onClick={() => navigate(`/match/${a.conditionId}`)}
+                >
+                  <TableCell className="px-6 py-3 max-w-[280px] truncate font-medium">{a.question}</TableCell>
+                  <TableCell className="px-6 py-3 text-sm">
+                    {a.type === 'price_spike' ? t('dashboard.priceSpike') : t('dashboard.volumeSurge')}
+                  </TableCell>
+                  <TableCell className="px-6 py-3 text-sm text-muted-foreground">{a.detail}</TableCell>
+                  <TableCell className="px-6 py-3 text-right">
+                    <Badge variant={a.severity === 'high' ? 'red' : a.severity === 'medium' ? 'yellow' : 'secondary'}>
+                      {a.severity}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
       {/* Top Deviations */}

@@ -4,3 +4,6 @@ export * from './llm-repository';
 export * from './allocation-repository';
 export * from './alert-repository';
 export * from './simulation-repository';
+export * from './esports-repository';
+export * from './signal-repository';
+export * from './wallet-follow-repository';

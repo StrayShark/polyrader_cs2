@@ -1,10 +1,18 @@
-import type { DailyDashboard } from '@polyrader/core';
+import type { DailyDashboard, DeviationAlert } from '@polyrader/core';
 import { DailyDashboardEngine, PredictionEngine } from '@polyrader/core';
 import { LLMRepository, cacheGet, cacheSet } from '@polyrader/infra';
+import { LLMClientFactory, CircuitBreakerLLMClient } from '@polyrader/infra';
+import { KeyManager } from '@polyrader/core';
+import type { LLMProvider } from '@polyrader/core';
 import { MarketService } from './market-service';
 import { WhaleService } from './whale-service';
 import { buildMatchInfo, buildFallbackMatchInfo, loadTeamFromDb, buildFallbackTeam } from './match-helpers';
 import { logger } from '../utils/logger';
+
+interface LightweightLLMResult {
+  prob: number;
+  provider: string;
+}
 
 export class DailyService {
   private engine = new DailyDashboardEngine();
@@ -12,6 +20,8 @@ export class DailyService {
   private marketService = new MarketService();
   private llmRepo = new LLMRepository();
   private whaleService = new WhaleService();
+  private keyManager: KeyManager | null = null;
+  private circuitBreakers = new Map<string, CircuitBreakerLLMClient>();
 
   async getDashboard(): Promise<DailyDashboard> {
     const today = new Date().toISOString().split('T')[0];
@@ -36,6 +46,9 @@ export class DailyService {
         matchMap.set(String(m.match_id ?? ''), m);
       }
 
+      // Pre-fetch lightweight LLM predictions for all matches in parallel
+      const llmPredictions = await this.batchLightweightPredictions(matchMarkets, upcomingMatches);
+
       const deviations = await Promise.all(
         matchMarkets.map(async (m) => {
           const rawProb = parseFloat(m.outcomePrices[0] ?? '0.5');
@@ -44,7 +57,6 @@ export class DailyService {
           // Try to find matching DB match data by HLTV match_id first
           let dbMatch = matchMap.get(m.conditionId);
           // Fallback: match by team names extracted from the market question
-          // (market question looks like "Counter-Strike: TeamA vs TeamB")
           if (!dbMatch) {
             const question = (m.question ?? '').toLowerCase();
             dbMatch = upcomingMatches.find((um) => {
@@ -72,7 +84,9 @@ export class DailyService {
 
           const deviation = prediction.winProbability.teamA - polymarketProb;
 
-          return {
+          // Use LLM prediction if available, otherwise fall back to rule-based
+          const llmResult = llmPredictions.get(m.conditionId);
+          const alert: DeviationAlert = {
             marketId: m.conditionId,
             question: m.question,
             polymarketProb,
@@ -80,12 +94,17 @@ export class DailyService {
             deviation,
             direction: deviation > 0 ? ('undervalued' as const) : ('overvalued' as const),
           };
+          if (llmResult) {
+            alert.llmProb = llmResult.prob;
+          }
+
+          return alert;
         }),
       );
 
       const whaleAlerts: Array<{ address: string; marketId: string; action: string; amount: number; timestamp: string; suspiciousScore: number }> = [];
       try {
-        const whales = await this.whaleService.getWhales(20);
+        const whales = await this.whaleService.getWhales({ limit: 20 });
         for (const whale of whales) {
           for (const trade of whale.recentTrades.slice(0, 3)) {
             if (trade.amount >= 1000) {
@@ -113,5 +132,99 @@ export class DailyService {
     }
   }
 
-}
+  /**
+   * Lightweight LLM pre-analysis: for each match, asks a single enabled LLM
+   * for a quick win-probability estimate. Falls back gracefully if no LLM
+   * is configured or if the call fails.
+   */
+  private async batchLightweightPredictions(
+    matchMarkets: Array<{ conditionId: string; question: string }>,
+    upcomingMatches: Array<Record<string, unknown>>,
+  ): Promise<Map<string, LightweightLLMResult>> {
+    const results = new Map<string, LightweightLLMResult>();
+    if (matchMarkets.length === 0) return results;
 
+    let configs: Array<{ provider: LLMProvider; apiKey: string; model: string }>;
+    try {
+      const allConfigs = await this.llmRepo.getAllConfigs();
+      configs = allConfigs
+        .filter((c) => c.isEnabled && c.apiKey)
+        .map((c) => ({ provider: c.provider, apiKey: c.apiKey, model: c.model }));
+    } catch {
+      return results;
+    }
+    if (configs.length === 0) return results;
+
+    // Use the first enabled provider for lightweight pre-analysis
+    const config = configs[0];
+
+    const matchMap = new Map<string, Record<string, unknown>>();
+    for (const m of upcomingMatches) {
+      matchMap.set(String(m.match_id ?? ''), m);
+    }
+
+    const promises = matchMarkets.map(async (m) => {
+      try {
+        const dbMatch = matchMap.get(m.conditionId)
+          ?? upcomingMatches.find((um) => {
+            const question = (m.question ?? '').toLowerCase();
+            const nameA = String(um.team_a_name ?? '').toLowerCase();
+            const nameB = String(um.team_b_name ?? '').toLowerCase();
+            return nameA && nameB && question.includes(nameA) && question.includes(nameB);
+          });
+
+        const teamAName = dbMatch ? String(dbMatch.team_a_name ?? 'Team A') : 'Team A';
+        const teamBName = dbMatch ? String(dbMatch.team_b_name ?? 'Team B') : 'Team B';
+
+        const prob = await this.lightweightPredict(config, teamAName, teamBName, m.question);
+        if (prob !== null) {
+          results.set(m.conditionId, { prob, provider: config.provider });
+        }
+      } catch {
+        // skip on error
+      }
+    });
+
+    await Promise.allSettled(promises);
+    return results;
+  }
+
+  private async lightweightPredict(
+    config: { provider: LLMProvider; apiKey: string; model: string },
+    teamAName: string,
+    teamBName: string,
+    question: string,
+  ): Promise<number | null> {
+    const encKey = process.env.POLYRADER_ENCRYPTION_KEY ?? process.env.ENCRYPTION_KEY;
+    if (!encKey) return null;
+
+    try {
+      if (!this.keyManager) {
+        this.keyManager = new KeyManager(encKey);
+      }
+      const apiKey = this.keyManager.decrypt(config.apiKey);
+
+      const key = `${config.provider}:${config.model}`;
+      let wrapped = this.circuitBreakers.get(key);
+      if (!wrapped) {
+        const inner = LLMClientFactory.create(config.provider, apiKey, config.model);
+        wrapped = new CircuitBreakerLLMClient(config.provider, inner);
+        this.circuitBreakers.set(key, wrapped);
+      }
+
+      const system = 'You are a CS2 esports analyst. Given a match, output ONLY a JSON object: {"teamAProb": 0.0-1.0}. No other text.';
+      const user = `Match: ${question}\nTeam A: ${teamAName}\nTeam B: ${teamBName}\nEstimate Team A win probability (0.0-1.0).`;
+
+      const raw = await wrapped.complete({ system, user });
+      const match = raw.match(/"teamAProb"\s*:\s*([0-9.]+)/i);
+      if (match) {
+        const prob = parseFloat(match[1]);
+        if (!isNaN(prob) && prob >= 0 && prob <= 1) return prob;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+}

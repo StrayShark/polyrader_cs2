@@ -4,6 +4,7 @@ import { useI18n } from '@/hooks/use-i18n';
 import { useToast } from './ToastProvider';
 import { api } from '@/utils/api';
 import { Card, CardHeader, CardTitle, Button, Input, Textarea } from '@/components/ui';
+import { ProductModeNotice } from './ProductModeNotice';
 
 const EMPTY_FORM = {
   matchId: '',
@@ -72,6 +73,7 @@ export function DecisionJournalForm() {
         </div>
       </CardHeader>
       <div className="p-6 space-y-3">
+        <ProductModeNotice mode="analysis-only" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label className="text-xs text-muted-foreground">{t('journal.matchId')}</label>

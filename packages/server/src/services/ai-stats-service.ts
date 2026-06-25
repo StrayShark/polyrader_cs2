@@ -1,5 +1,5 @@
-import type { LLMStats, UserStats, SimulatedBet, CalibrationPoint, LLMProvider } from '@polyrader/core';
-import { StatsEngine, SimulatedBettingEngine } from '@polyrader/core';
+import type { LLMStats, UserStats, SimulatedBet, CalibrationPoint, LLMProvider, EventTier } from '@polyrader/core';
+import { StatsEngine, SimulatedBettingEngine, classifyEventTier, TIER_ORDER } from '@polyrader/core';
 import { LLMRepository } from '@polyrader/infra';
 
 export class AiStatsService {
@@ -92,5 +92,123 @@ export class AiStatsService {
 
   async deleteBet(id: string): Promise<void> {
     await this.llmRepo.deleteBet(id);
+  }
+
+  /**
+   * Deep analysis of a single LLM provider's prediction history.
+   * Returns stats broken down by event tier, prediction direction,
+   * confidence band, and team.
+   */
+  async getProviderAnalysis(providerId: string): Promise<{
+    provider: LLMProvider;
+    totalAnalyses: number;
+    settledBets: SimulatedBet[];
+    accuracy: number;
+    avgConfidence: number;
+    calibration: CalibrationPoint[];
+    equityCurve: Array<{ date: string; equity: number }>;
+    byTeam: Array<{ team: string; total: number; won: number; accuracy: number }>;
+    byTier: Array<{ tier: EventTier; total: number; won: number; accuracy: number }>;
+    byDirection: Array<{ direction: string; total: number; won: number; accuracy: number }>;
+    recentAnalyses: Array<Record<string, unknown>>;
+  }> {
+    const provider = providerId as LLMProvider;
+    const bets = await this.llmRepo.getBetsByProvider(provider, 500);
+    const settled = bets.filter((b) => b.result !== 'pending');
+    const won = settled.filter((b) => b.result === 'won');
+
+    const accuracy = settled.length > 0 ? (won.length / settled.length) * 100 : 0;
+    const avgConfidence = settled.length > 0
+      ? settled.reduce((sum, b) => sum + (1 / Math.max(1.01, b.odds)) * 100, 0) / settled.length
+      : 0;
+
+    // Calibration
+    const predictions = settled.map((b) => ({
+      confidence: 1 / Math.max(1.01, b.odds),
+      correct: b.result === 'won',
+    }));
+    const calibration = this.statsEngine.calculateCalibration(provider, predictions);
+
+    // Equity curve
+    let equity = 0;
+    const equityCurve = settled
+      .filter((b) => b.settledAt)
+      .sort((a, b) => (a.settledAt! < b.settledAt! ? -1 : 1))
+      .map((b) => {
+        equity += b.profitLoss;
+        return { date: b.settledAt!, equity: Math.round(equity * 100) / 100 };
+      });
+
+    // By team
+    const teamMap = new Map<string, { total: number; won: number }>();
+    for (const bet of settled) {
+      const team = bet.team;
+      const entry = teamMap.get(team) ?? { total: 0, won: 0 };
+      entry.total++;
+      if (bet.result === 'won') entry.won++;
+      teamMap.set(team, entry);
+    }
+    const byTeam = Array.from(teamMap.entries())
+      .map(([team, v]) => ({
+        team,
+        total: v.total,
+        won: v.won,
+        accuracy: v.total > 0 ? (v.won / v.total) * 100 : 0,
+      }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 20);
+
+    const tierMap = new Map<EventTier, { total: number; won: number }>();
+    const directionMap = new Map<string, { total: number; won: number }>();
+    for (const bet of settled) {
+      const match = this.llmRepo.getMatch(bet.matchId);
+      const eventName = match ? String(match.event_name ?? '') : '';
+      const eventType = match ? (String(match.event_type ?? 'Online') as 'LAN' | 'Online') : 'Online';
+      const tier = classifyEventTier({ stars: 0, eventType, eventName });
+      const tierEntry = tierMap.get(tier) ?? { total: 0, won: 0 };
+      tierEntry.total++;
+      if (bet.result === 'won') tierEntry.won++;
+      tierMap.set(tier, tierEntry);
+
+      const implied = 1 / Math.max(1.01, bet.odds);
+      const direction = implied >= 0.55 ? 'favorite' : implied <= 0.45 ? 'underdog' : 'coinflip';
+      const dirEntry = directionMap.get(direction) ?? { total: 0, won: 0 };
+      dirEntry.total++;
+      if (bet.result === 'won') dirEntry.won++;
+      directionMap.set(direction, dirEntry);
+    }
+    const byTier = Array.from(tierMap.entries())
+      .map(([tier, v]) => ({
+        tier,
+        total: v.total,
+        won: v.won,
+        accuracy: v.total > 0 ? (v.won / v.total) * 100 : 0,
+      }))
+      .sort((a, b) => TIER_ORDER[b.tier] - TIER_ORDER[a.tier]);
+    const byDirection = Array.from(directionMap.entries())
+      .map(([direction, v]) => ({
+        direction,
+        total: v.total,
+        won: v.won,
+        accuracy: v.total > 0 ? (v.won / v.total) * 100 : 0,
+      }))
+      .sort((a, b) => b.total - a.total);
+
+    // Recent analyses
+    const recentAnalyses = this.llmRepo.getAnalysesByProvider(provider, 100);
+
+    return {
+      provider,
+      totalAnalyses: recentAnalyses.length,
+      settledBets: settled,
+      accuracy: Math.round(accuracy * 10) / 10,
+      avgConfidence: Math.round(avgConfidence * 10) / 10,
+      calibration,
+      equityCurve,
+      byTeam,
+      byTier,
+      byDirection,
+      recentAnalyses,
+    };
   }
 }

@@ -48,7 +48,8 @@ export class DailyDashboardEngine {
     whaleAlerts: WhaleAlert[],
   ): ScoredMatch {
     const deviation = deviations.find((d) => d.marketId === market.conditionId);
-    const confidenceScore = this.calculateConfidenceScore(market, deviation?.predictedProb);
+    const predictedProb = deviation?.llmProb ?? deviation?.predictedProb;
+    const confidenceScore = this.calculateConfidenceScore(market, predictedProb);
     const deviationScore = this.calculateDeviationScore(market, deviations);
     const volumeScore = this.calculateVolumeScore(market);
     const whaleScore = this.calculateWhaleScore(market, whaleAlerts);
@@ -71,6 +72,8 @@ export class DailyDashboardEngine {
       tierScore: Math.round(tierScore),
       recommendation:
         attentionScore >= 70 ? 'high' : attentionScore >= 40 ? 'medium' : 'low',
+      llmPrediction: deviation?.llmProb,
+      llmSource: deviation?.llmProb !== undefined ? 'lightweight-llm' : undefined,
     };
   }
 
@@ -92,7 +95,11 @@ export class DailyDashboardEngine {
   ): number {
     const deviation = deviations.find((d) => d.marketId === market.conditionId);
     if (!deviation) return 0;
-    return Math.min(100, deviation.deviation * 500); // 20% deviation = 100 score
+    // Prefer LLM-based deviation, fall back to rule-based
+    const effectiveDeviation = deviation.llmProb !== undefined
+      ? deviation.llmProb - deviation.polymarketProb
+      : deviation.deviation;
+    return Math.min(100, Math.abs(effectiveDeviation) * 500); // 20% deviation = 100 score
   }
 
   private calculateVolumeScore(market: Market): number {

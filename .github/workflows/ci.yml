@@ -51,7 +51,13 @@ jobs:
             echo "ERROR: Server binary not found!"
             exit 1
           fi
+      - name: Task tracker tests (isolated)
+        run: npm test --workspace @polyrader/server -- task-tracker-service system-tasks-api
       - run: npx turbo run test
+      - name: Install Playwright browser
+        run: cd packages/web && npx playwright install chromium
+      - name: E2E tests
+        run: cd packages/web && npm run test:e2e
 
   build:
     name: Build Web

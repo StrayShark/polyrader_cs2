@@ -91,4 +91,14 @@ export class AiStatsController {
       res.status(500).json({ error: 'Failed to fetch equity curve', message: process.env.NODE_ENV === 'development' ? (err as Error).message : undefined });
     }
   }
+
+  async getProviderAnalysis(req: Request, res: Response): Promise<void> {
+    try {
+      const analysis = await this.service.getProviderAnalysis(req.params.providerId);
+      res.json({ data: analysis });
+    } catch (err) {
+      logger.error('Failed to fetch provider analysis', { error: (err as Error).message });
+      res.status(500).json({ error: 'Failed to fetch provider analysis', message: process.env.NODE_ENV === 'development' ? (err as Error).message : undefined });
+    }
+  }
 }

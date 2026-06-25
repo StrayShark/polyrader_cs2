@@ -55,4 +55,43 @@ export class MarketController {
       res.status(500).json({ error: 'Failed to fetch order book', message: process.env.NODE_ENV === 'development' ? (err as Error).message : undefined });
     }
   }
+
+  async getHolders(req: Request, res: Response): Promise<void> {
+    try {
+      const limit = parseInt(String(req.query.limit ?? '50'), 10);
+      const holders = await this.service.getHolders(
+        req.params.conditionId,
+        Number.isFinite(limit) ? limit : 50,
+      );
+      res.json({ data: holders });
+    } catch (err) {
+      logger.error('Failed to fetch market holders', { error: (err as Error).message, requestId: req.headers['x-request-id'] });
+      res.status(500).json({ error: 'Failed to fetch market holders', message: process.env.NODE_ENV === 'development' ? (err as Error).message : undefined });
+    }
+  }
+
+  async getMarketPositions(req: Request, res: Response): Promise<void> {
+    try {
+      const limit = parseInt(String(req.query.limit ?? '100'), 10);
+      const positions = await this.service.getMarketPositions(
+        req.params.conditionId,
+        Number.isFinite(limit) ? limit : 100,
+      );
+      res.json({ data: positions });
+    } catch (err) {
+      logger.error('Failed to fetch market positions', { error: (err as Error).message, requestId: req.headers['x-request-id'] });
+      res.status(500).json({ error: 'Failed to fetch market positions', message: process.env.NODE_ENV === 'development' ? (err as Error).message : undefined });
+    }
+  }
+
+  async getAnomalies(req: Request, res: Response): Promise<void> {
+    try {
+      const limit = parseInt(String(req.query.limit ?? '30'), 10);
+      const anomalies = await this.service.detectAnomalies(Number.isFinite(limit) ? limit : 30);
+      res.json({ data: anomalies, count: anomalies.length });
+    } catch (err) {
+      logger.error('Failed to detect market anomalies', { error: (err as Error).message, requestId: req.headers['x-request-id'] });
+      res.status(500).json({ error: 'Failed to detect anomalies', message: process.env.NODE_ENV === 'development' ? (err as Error).message : undefined });
+    }
+  }
 }

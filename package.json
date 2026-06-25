@@ -19,6 +19,7 @@
     "knip": "knip",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "test:e2e": "npm run test:e2e --workspace=@polyrader/web",
     "clean": "turbo run clean",
     "format": "prettier --write \"packages/**/*.{ts,tsx,json,css}\""
   },

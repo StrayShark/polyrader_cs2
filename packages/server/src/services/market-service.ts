@@ -1,5 +1,5 @@
-import type { Market } from '@polyrader/core';
-import { PolymarketGammaClient, PolymarketClobClient } from '@polyrader/infra';
+import type { Market, PolymarketHolder, PolymarketMarketPosition } from '@polyrader/core';
+import { PolymarketGammaClient, PolymarketClobClient, PolymarketDataClient } from '@polyrader/infra';
 import type { OrderBookSummary } from '@polyrader/infra';
 import { MarketRepository } from '@polyrader/infra';
 import { cacheGet, cacheSet } from '@polyrader/infra';
@@ -11,9 +11,19 @@ import { logger } from '../utils/logger';
 const CACHE_TTL = 60; // 1 minute
 const ORDERBOOK_CACHE_TTL = 10; // 10 seconds for orderbook
 
+export interface MarketAnomaly {
+  conditionId: string;
+  question: string;
+  type: 'price_spike' | 'volume_surge';
+  severity: 'low' | 'medium' | 'high';
+  detail: string;
+  value: number;
+}
+
 export class MarketService {
   private gammaClient = new PolymarketGammaClient();
   private clobClient = new PolymarketClobClient();
+  private dataClient = new PolymarketDataClient();
   private marketRepo = new MarketRepository();
   private dedup = new RequestDedup<unknown>();
   private alertService = new AlertService();
@@ -147,5 +157,116 @@ export class MarketService {
         return null;
       }
     }) as Promise<OrderBookSummary | null>;
+  }
+
+  async getHolders(conditionId: string, limit = 50): Promise<PolymarketHolder[]> {
+    const cacheKey = `holders:${conditionId}:${limit}`;
+    const cached = await cacheGet<PolymarketHolder[]>(cacheKey);
+    if (cached) return cached;
+
+    return this.dedup.run(cacheKey, async () => {
+      try {
+        const holders = await this.dataClient.getHolders(conditionId, limit);
+        await cacheSet(cacheKey, holders, 60);
+        return holders;
+      } catch (err) {
+        logger.warn('Failed to fetch market holders', { conditionId, error: (err as Error).message });
+        return [];
+      }
+    }) as Promise<PolymarketHolder[]>;
+  }
+
+  async getMarketPositions(conditionId: string, limit = 100): Promise<PolymarketMarketPosition[]> {
+    const cacheKey = `market-positions:${conditionId}:${limit}`;
+    const cached = await cacheGet<PolymarketMarketPosition[]>(cacheKey);
+    if (cached) return cached;
+
+    return this.dedup.run(cacheKey, async () => {
+      try {
+        const positions = await this.dataClient.getMarketPositions(conditionId, limit);
+        await cacheSet(cacheKey, positions, 60);
+        return positions;
+      } catch (err) {
+        logger.warn('Failed to fetch market positions', { conditionId, error: (err as Error).message });
+        return [];
+      }
+    }) as Promise<PolymarketMarketPosition[]>;
+  }
+
+  /** Poll CLOB midpoints for top markets and broadcast via WebSocket. */
+  async pollAndBroadcastPrices(limit = 20): Promise<number> {
+    const markets = await this.getMarkets(limit, 0);
+    let updated = 0;
+
+    for (const market of markets) {
+      const tokenId = market.clobTokenIds?.[0];
+      if (!tokenId) continue;
+
+      try {
+        const price = await this.clobClient.getMidpoint(tokenId);
+        if (!Number.isFinite(price) || price <= 0 || price >= 1) continue;
+
+        this.marketRepo.insertPriceHistory(market.conditionId, price);
+        const payload = {
+          conditionId: market.conditionId,
+          price,
+          timestamp: Date.now(),
+        };
+        broadcast(`prices:${market.conditionId}`, payload);
+        broadcast('prices', payload);
+        updated++;
+      } catch (err) {
+        logger.warn('Price poll failed', { conditionId: market.conditionId, error: (err as Error).message });
+      }
+    }
+
+    return updated;
+  }
+
+  /** Detect unusual price moves and volume spikes across active markets. */
+  async detectAnomalies(limit = 30): Promise<MarketAnomaly[]> {
+    const markets = await this.getMarkets(limit, 0);
+    const anomalies: MarketAnomaly[] = [];
+
+    for (const market of markets) {
+      const currentPrice = parseFloat(market.outcomePrices[0] ?? '0');
+      if (!Number.isFinite(currentPrice)) continue;
+
+      const history = this.marketRepo.getPriceHistory(market.conditionId, 20);
+      if (history.length >= 2) {
+        const prevPrice = history[1].price;
+        const change = Math.abs(currentPrice - prevPrice);
+        if (change >= 0.05) {
+          anomalies.push({
+            conditionId: market.conditionId,
+            question: market.question,
+            type: 'price_spike',
+            severity: change >= 0.15 ? 'high' : change >= 0.08 ? 'medium' : 'low',
+            detail: `Price moved ${(change * 100).toFixed(1)}% (${(prevPrice * 100).toFixed(1)}% → ${(currentPrice * 100).toFixed(1)}%)`,
+            value: change,
+          });
+        }
+      }
+
+      const vol24h = market.volume24h ?? 0;
+      const totalVol = market.volume ?? 0;
+      if (vol24h > 10_000 && totalVol > vol24h) {
+        const priorVol = totalVol - vol24h;
+        const surgeRatio = priorVol > 0 ? vol24h / priorVol : vol24h;
+        if (surgeRatio >= 0.5) {
+          anomalies.push({
+            conditionId: market.conditionId,
+            question: market.question,
+            type: 'volume_surge',
+            severity: surgeRatio >= 1 ? 'high' : surgeRatio >= 0.75 ? 'medium' : 'low',
+            detail: `24h volume $${(vol24h / 1000).toFixed(1)}K (${(surgeRatio * 100).toFixed(0)}% of prior)`,
+            value: surgeRatio,
+          });
+        }
+      }
+    }
+
+    const severityRank = { high: 3, medium: 2, low: 1 };
+    return anomalies.sort((a, b) => severityRank[b.severity] - severityRank[a.severity]);
   }
 }

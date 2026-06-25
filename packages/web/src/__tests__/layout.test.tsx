@@ -92,10 +92,10 @@ describe('Layout: Sidebar uniqueness', () => {
 // Layout: Sidebar Content
 // ============================================================
 describe('Layout: Sidebar content', () => {
-  it('renders all 10 navigation links', () => {
+  it('renders all 11 navigation links', () => {
     const { container } = renderAppLayout('/');
     const links = container.querySelectorAll('aside nav a');
-    expect(links.length).toBe(10);
+    expect(links.length).toBe(11);
   });
 
   it('renders theme toggle buttons (dark, light, matrix)', () => {

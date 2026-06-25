@@ -9,6 +9,10 @@ vi.mock('@polyrader/infra', () => ({
   PolymarketClobClient: vi.fn().mockImplementation(() => ({
     getOrderBook: vi.fn(),
   })),
+  PolymarketDataClient: vi.fn().mockImplementation(() => ({
+    getHolders: vi.fn(),
+    getMarketPositions: vi.fn(),
+  })),
   MarketRepository: vi.fn().mockImplementation(() => ({
     findAll: vi.fn(),
     findByConditionId: vi.fn(),

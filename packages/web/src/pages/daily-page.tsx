@@ -124,6 +124,7 @@ export function DailyPage() {
                 <th className="px-6 py-2 text-left font-medium">{t('daily.match')}</th>
                 <th className="px-6 py-2 text-right font-medium">{t('daily.attention')}</th>
                 <th className="px-6 py-2 text-right font-medium">{t('daily.confidence')}</th>
+                <th className="px-6 py-2 text-right font-medium">{t('daily.llmPrediction')}</th>
                 <th className="px-6 py-2 text-right font-medium">{t('common.deviation')}</th>
                 <th className="px-6 py-2 text-right font-medium">{t('daily.recommendation')}</th>
               </tr>
@@ -136,6 +137,9 @@ export function DailyPage() {
                   </td>
                   <td className="px-6 py-3 text-right tabular-nums">{scored.attentionScore}</td>
                   <td className="px-6 py-3 text-right tabular-nums">{scored.confidenceScore}</td>
+                  <td className="px-6 py-3 text-right tabular-nums">
+                    {scored.llmPrediction !== undefined ? `${(scored.llmPrediction * 100).toFixed(1)}%` : '--'}
+                  </td>
                   <td className="px-6 py-3 text-right tabular-nums">{scored.deviationScore}</td>
                   <td className="px-6 py-3 text-right">
                     <span className={`rounded px-1.5 py-0.5 text-xs ${

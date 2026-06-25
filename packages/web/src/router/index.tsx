@@ -10,8 +10,10 @@ const MatchDetailPage = lazy(() => import('../pages/match-detail-page').then((m)
 const WhalesPage = lazy(() => import('../pages/whales-page').then((m) => ({ default: m.WhalesPage })));
 const EsportsPage = lazy(() => import('../pages/esports-page').then((m) => ({ default: m.EsportsPage })));
 const SignalsPage = lazy(() => import('../pages/signals-page').then((m) => ({ default: m.SignalsPage })));
+const PolymarketAccountPage = lazy(() => import('../pages/polymarket-account-page').then((m) => ({ default: m.PolymarketAccountPage })));
 const AiConfigPage = lazy(() => import('../pages/ai-config-page').then((m) => ({ default: m.AiConfigPage })));
 const AiStatsPage = lazy(() => import('../pages/ai-stats-page').then((m) => ({ default: m.AiStatsPage })));
+const LlmAnalysisPage = lazy(() => import('../pages/llm-analysis-page').then((m) => ({ default: m.LlmAnalysisPage })));
 const PromptVariantsPage = lazy(() => import('../pages/prompt-variants-page').then((m) => ({ default: m.PromptVariantsPage })));
 const AllocationPage = lazy(() => import('../pages/allocation-page').then((m) => ({ default: m.AllocationPage })));
 const SimulationPage = lazy(() => import('../pages/simulation-page').then((m) => ({ default: m.SimulationPage })));
@@ -48,8 +50,10 @@ export const router = createHashRouter([
       { path: 'whales', element: withSuspense(WhalesPage) },
       { path: 'esports', element: withSuspense(EsportsPage) },
       { path: 'signals', element: withSuspense(SignalsPage) },
+      { path: 'polymarket/account', element: withSuspense(PolymarketAccountPage) },
       { path: 'ai/config', element: withSuspense(AiConfigPage) },
       { path: 'ai/stats', element: withSuspense(AiStatsPage) },
+      { path: 'llm/analysis/:providerId', element: withSuspense(LlmAnalysisPage) },
       { path: 'prompt-variants', element: withSuspense(PromptVariantsPage) },
       { path: 'allocation', element: withSuspense(AllocationPage) },
       { path: 'simulation', element: withSuspense(SimulationPage) },

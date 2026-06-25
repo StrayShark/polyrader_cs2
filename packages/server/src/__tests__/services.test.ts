@@ -50,7 +50,7 @@ describe('WhaleService', () => {
     it('returns cached whales when available', async () => {
       vi.mocked(cacheGet).mockResolvedValue([{ address: '0xabc', suspiciousScore: { total: 50 } } as never]);
 
-      const result = await service.getWhales(50);
+      const result = await service.getWhales({ limit: 50 });
 
       expect(result).toHaveLength(1);
       expect(result[0].address).toBe('0xabc');
@@ -66,7 +66,7 @@ describe('WhaleService', () => {
         { address: '0xdef', totalVolume: 5000, activePositions: 2, winRate: 0.5, pnl: 100, recentTrades: [], suspiciousScore: { total: 0, volumeAnomaly: 0, timingAnomaly: 0, patternAnomaly: 0, correlationAnomaly: 0 } },
       ]);
 
-      const result = await service.getWhales(10);
+      const result = await service.getWhales({ limit: 10 });
 
       expect(result).toHaveLength(1);
       expect(result[0].address).toBe('0xdef');

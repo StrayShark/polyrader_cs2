@@ -1,27 +1,17 @@
 import type { Market } from '@polyrader/core';
+import { fetchJsonWithBrowser } from '../../crawlers/browser-fetch.js';
 
 const GAMMA_API_URL = process.env.POLYMARKET_GAMMA_API_URL ?? 'https://gamma-api.polymarket.com';
 
-async function fetchWithRetry(url: string, retries = 2, timeoutMs = 15000): Promise<Response> {
-  let lastErr: Error | null = null;
-  for (let i = 0; i <= retries; i++) {
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
-      const response = await fetch(url, { signal: controller.signal });
-      clearTimeout(timer);
-      if (!response.ok) {
-        throw new Error(`Gamma API error: ${response.status} ${response.statusText}`);
-      }
-      return response;
-    } catch (err) {
-      lastErr = err as Error;
-      if (i < retries) {
-        await new Promise((r) => setTimeout(r, (i + 1) * 1000));
-      }
-    }
-  }
-  throw lastErr ?? new Error('Gamma API request failed');
+/**
+ * Fetch JSON from Gamma API via headless Chromium.
+ *
+ * Direct Node.js fetch is blocked by SNI-based DPI filtering in this
+ * environment (TLS handshake gets Connection Reset). Chromium's BoringSSL
+ * stack bypasses this, so all Gamma API calls route through Playwright.
+ */
+async function gammaFetch<T>(url: string): Promise<T> {
+  return fetchJsonWithBrowser<T>(url);
 }
 
 export class PolymarketGammaClient {
@@ -36,9 +26,7 @@ export class PolymarketGammaClient {
     if (params) {
       Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
     }
-
-    const response = await fetchWithRetry(url.toString());
-    return response.json() as Promise<T>;
+    return gammaFetch<T>(url.toString());
   }
 
   /**
@@ -46,26 +34,70 @@ export class PolymarketGammaClient {
    * Polymarket Gamma API does not support tag=cs2 filtering (CS2 markets
    * have empty tags arrays). Instead, we fetch active markets sorted by
    * volume and filter by "Counter-Strike" in the question text.
+   *
+   * If insufficient active CS2 markets are found, also fetch closed markets
+   * (useful during CS2 off-season) to keep the dashboard populated for analysis.
    */
   async getMarkets(limit = 50, offset = 0): Promise<Market[]> {
-    // Fetch more than needed to compensate for client-side filtering
-    const fetchLimit = Math.min(limit * 5, 500);
-    const data = await this.fetch<unknown[]>('/markets', {
-      limit: String(fetchLimit),
-      offset: String(offset),
-      active: 'true',
-      closed: 'false',
-      order: 'volume24hr',
-      ascending: 'false',
-    });
+    const isCs2 = (item: unknown): boolean => {
+      const m = item as Record<string, unknown>;
+      const q = String(m.question ?? '').toLowerCase();
+      return q.startsWith('counter-strike') || q.includes('cs2') || q.includes('csgo');
+    };
 
-    const cs2Markets = data
-      .filter((item: unknown) => {
-        const m = item as Record<string, unknown>;
-        const q = String(m.question ?? '').toLowerCase();
-        return q.startsWith('counter-strike') || q.includes('cs2') || q.includes('csgo');
-      })
-      .map((item: unknown) => this.mapMarket(item as Record<string, unknown>));
+    // Paginate through active markets to find all CS2 markets.
+    // Gamma API caps at 500 per request; CS2 markets are often buried
+    // among thousands of non-CS2 markets sorted by volume.
+    const pageSize = 500;
+    const maxPages = 5; // up to 2500 markets scanned
+    let cs2Markets: Market[] = [];
+
+    // 1) Paginate active markets
+    for (let page = 0; page < maxPages; page++) {
+      const currentOffset = offset + page * pageSize;
+      let batch: unknown[];
+      try {
+        batch = await this.fetch<unknown[]>('/markets', {
+          limit: String(pageSize),
+          offset: String(currentOffset),
+          active: 'true',
+          closed: 'false',
+          order: 'volume24hr',
+          ascending: 'false',
+        });
+      } catch { break; }
+      if (!batch || batch.length === 0) break;
+
+      const cs2Batch = batch.filter(isCs2).map((item) => this.mapMarket(item as Record<string, unknown>));
+      cs2Markets = cs2Markets.concat(cs2Batch);
+
+      // Stop early if we have enough and this page had no CS2 markets
+      if (cs2Markets.length >= limit && cs2Batch.length === 0 && page > 0) break;
+      if (batch.length < pageSize) break; // last page
+    }
+
+    // 2) If not enough active CS2 markets, supplement with closed ones (sorted by volume)
+    if (cs2Markets.length < limit) {
+      for (let page = 0; page < maxPages; page++) {
+        let closedBatch: unknown[];
+        try {
+          closedBatch = await this.fetch<unknown[]>('/markets', {
+            limit: String(pageSize),
+            offset: String(page * pageSize),
+            closed: 'true',
+            order: 'volume',
+            ascending: 'false',
+          });
+        } catch { break; }
+        if (!closedBatch || closedBatch.length === 0) break;
+
+        const cs2Closed = closedBatch.filter(isCs2).map((item) => this.mapMarket(item as Record<string, unknown>));
+        cs2Markets = cs2Markets.concat(cs2Closed);
+
+        if (cs2Markets.length >= limit) break;
+        if (closedBatch.length < pageSize) break;
+      }
+    }
 
     return cs2Markets.slice(0, limit);
   }
@@ -144,6 +176,13 @@ export class PolymarketGammaClient {
       try { outcomes = JSON.parse(String(data.outcomes ?? '[]')); } catch { /* malformed */ }
     }
 
+    const resolvedOutcome = data.resolvedOutcome === null || data.resolvedOutcome === undefined
+      ? undefined
+      : String(data.resolvedOutcome);
+    const resolvedPrice = data.resolvedPrice === null || data.resolvedPrice === undefined
+      ? undefined
+      : parseFloat(String(data.resolvedPrice));
+
     return {
       conditionId: String(data.id ?? data.conditionId ?? ''),
       slug: String(data.slug ?? ''),
@@ -157,10 +196,10 @@ export class PolymarketGammaClient {
       liquidity: parseFloat(String(data.liquidity ?? '0')),
       endDate: String(data.endDate ?? data.end_date_iso ?? ''),
       startDate: String(data.startDate ?? data.start_date_iso ?? ''),
-      status: data.closed ? 'closed' : 'active',
+      status: resolvedOutcome !== undefined || resolvedPrice !== undefined ? 'resolved' : data.closed ? 'closed' : 'active',
       tags: Array.isArray(data.tags) ? data.tags as string[] : [],
-      resolvedOutcome: data.resolvedOutcome ? String(data.resolvedOutcome) : undefined,
-      resolvedPrice: data.resolvedPrice ? parseFloat(String(data.resolvedPrice)) : undefined,
+      resolvedOutcome,
+      resolvedPrice: Number.isFinite(resolvedPrice) ? resolvedPrice : undefined,
     };
   }
 }

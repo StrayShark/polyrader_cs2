@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
     "test": "vitest run",
+    "test:tasks": "vitest run task-tracker-service system-tasks-api",
     "test:watch": "vitest",
     "clean": "rm -rf dist"
   },

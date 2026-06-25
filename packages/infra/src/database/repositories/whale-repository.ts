@@ -10,6 +10,26 @@ export class WhaleRepository {
     return rows.map(this.mapRow);
   }
 
+  findByWinRate(limit = 50, minSettledBets = 5, minWinRate = 0): Whale[] {
+    const rows = query<Record<string, unknown>>(
+      `SELECT * FROM whales
+       WHERE settled_bets >= ? AND win_rate >= ?
+       ORDER BY win_rate DESC, settled_bets DESC, pnl DESC
+       LIMIT ?`,
+      minSettledBets,
+      minWinRate,
+      limit,
+    );
+    return rows.map(this.mapRow);
+  }
+
+  findDistinctAddresses(): string[] {
+    const rows = query<{ address: string }>(
+      `SELECT DISTINCT address FROM whale_trades ORDER BY address`,
+    );
+    return rows.map((row) => row.address);
+  }
+
   findByAddress(address: string): Whale | null {
     const row = queryOne<Record<string, unknown>>(
       `SELECT * FROM whales WHERE address = ?`,
@@ -117,15 +137,50 @@ export class WhaleRepository {
       address,
       limit,
     );
-    return rows.map((row) => ({
-      txHash: row.tx_hash as string,
-      marketId: row.market_id as string,
-      outcome: row.outcome as string,
-      amount: row.amount as number,
-      price: row.price as number,
-      timestamp: row.timestamp as string,
-      type: row.type as 'buy' | 'sell',
-    }));
+    return rows.map((row) => this.mapTradeRow(row));
+  }
+
+  getAllTrades(address: string): WhaleTrade[] {
+    const rows = query<Record<string, unknown>>(
+      `SELECT * FROM whale_trades WHERE address = ? ORDER BY timestamp ASC`,
+      address,
+    );
+    return rows.map((row) => this.mapTradeRow(row));
+  }
+
+  updatePerformance(
+    address: string,
+    metrics: {
+      winRate: number;
+      totalPnl: number;
+      settledBets: number;
+      wins: number;
+      losses: number;
+      totalWagered: number;
+      roi: number;
+    },
+  ): void {
+    query(
+      `UPDATE whales SET
+         win_rate = ?,
+         pnl = ?,
+         settled_bets = ?,
+         wins = ?,
+         losses = ?,
+         total_wagered = ?,
+         roi = ?,
+         performance_updated_at = datetime('now'),
+         updated_at = datetime('now')
+       WHERE address = ?`,
+      metrics.winRate,
+      metrics.totalPnl,
+      metrics.settledBets,
+      metrics.wins,
+      metrics.losses,
+      metrics.totalWagered,
+      metrics.roi,
+      address,
+    );
   }
 
   insertTrade(trade: WhaleTrade & { address: string }): boolean {
@@ -236,6 +291,24 @@ export class WhaleRepository {
       suspiciousScore: this.parseJson(row.suspicious_score) as Whale['suspiciousScore'],
       recentTrades: (this.parseJson(row.recent_trades) as Whale['recentTrades']) ?? [],
       lastActive: row.last_active as string,
+      settledBets: row.settled_bets as number | undefined,
+      wins: row.wins as number | undefined,
+      losses: row.losses as number | undefined,
+      roi: row.roi as number | undefined,
+      totalWagered: row.total_wagered as number | undefined,
+      performanceUpdatedAt: row.performance_updated_at as string | undefined,
+    };
+  }
+
+  private mapTradeRow(row: Record<string, unknown>): WhaleTrade {
+    return {
+      txHash: row.tx_hash as string,
+      marketId: row.market_id as string,
+      outcome: row.outcome as string,
+      amount: row.amount as number,
+      price: row.price as number,
+      timestamp: row.timestamp as string,
+      type: row.type as 'buy' | 'sell',
     };
   }
 

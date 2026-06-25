@@ -62,14 +62,16 @@ export class SimulatedBettingEngine {
     const llmProb = betTeamA ? analysis.winProbability.teamA : analysis.winProbability.teamB;
     const team = betTeamA ? teamAName : teamBName;
 
-    // 计算 edge (LLM概率 vs 市场概率)
-    const edge = llmProb - marketProb;
+    const sideMarketProb = betTeamA ? marketProb : 1 - marketProb;
+
+    // 计算 edge (LLM概率 vs 对应投注方向的市场概率)
+    const edge = llmProb - sideMarketProb;
     if (edge < config.minEdge) return null;
 
     // 计算赔率
     const odds = config.oddsSource === 'llm_inverse'
       ? (llmProb > 0 ? 1 / llmProb : 2.0)
-      : (marketProb > 0 ? 1 / marketProb : 2.0);
+      : (sideMarketProb > 0 ? 1 / sideMarketProb : 2.0);
 
     // 计算下注金额
     let amount: number;
